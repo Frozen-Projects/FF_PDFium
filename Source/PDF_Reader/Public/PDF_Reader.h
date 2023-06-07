@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Modules/ModuleManager.h"
-#include "Kismet/GameplayStatics.h"
 
 class FPDF_ReaderModule : public IModuleInterface
 {
@@ -16,5 +15,4 @@ public:
 #ifdef _WIN64
 	void* PDFium_Handle;
 #endif
-
 };

@@ -14,25 +14,23 @@ public class PDF_Reader : ModuleRules
         {
             string Location_PDFium = "../Source/PDF_Reader/ThirdParty/pdfium/Windows/include";
             PrivateIncludePaths.Add(Location_PDFium);
-            PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Windows", "lib", "pdfium.dll.lib"));
+            
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Windows", "lib", "pdfium.dll.lib"));
             RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Windows", "lib", "pdfium.dll"));
             PublicDelayLoadDLLs.Add("pdfium.dll");
         }
 
         if (UnrealTargetPlatform.Android == Target.Platform)
         {
+            // We need it for #include "AndroidPlatform.h" in fpdview.h. Because default #define DLLEXPORT makes clash with Unreal's defination. We comment it out and include AndroidPlatform.h
+            PublicIncludePaths.Add(Path.Combine(EngineDirectory, "Source", "Runtime", "Core", "Public", "Android"));
+
+            string Location_PDFium = "../Source/PDF_Reader/ThirdParty/pdfium/Android/include";
+            PrivateIncludePaths.Add(Location_PDFium);
+
+            PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Android", "lib", "arm64-v8a", "libpdfium.so"));
+
             AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "PDF_Reader_UPL_Android.xml"));
-
-            string Location_PDFium = "../Source/PDF_Reader/ThirdParty/pdfium/Android/include";
-            PrivateIncludePaths.Add(Location_PDFium);
-            PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Android", "lib", "libpdfium.so"));
-        }
-
-        if (UnrealTargetPlatform.IOS == Target.Platform)
-        {
-            string Location_PDFium = "../Source/PDF_Reader/ThirdParty/pdfium/Android/include";
-            PrivateIncludePaths.Add(Location_PDFium);
-            PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "iOS", "lib", "libpdfium.dylib"));
         }
 
         PublicDependencyModuleNames.AddRange(
@@ -43,7 +41,6 @@ public class PDF_Reader : ModuleRules
 			}
 			);
 			
-		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -52,10 +49,12 @@ public class PDF_Reader : ModuleRules
                 "Slate",
 				"SlateCore",
                 "Projects",
+                "RHI",
+				"RenderCore",
+                "ExtendedVars",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
-		
 		
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
