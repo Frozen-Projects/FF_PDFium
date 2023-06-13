@@ -10,7 +10,7 @@ https://github.com/FF-Projects-UE/HTTP_Client
 https://github.com/FF-Projects-UE/ExtendedVars
 
 # RELATED PLUGINS
-1- UE_LibHaru (Creating PDF including image supports)
+1- UE_LibHaru (Use this if you want to create PDF with images.)
 https://github.com/FF-Projects-UE/UE_LibHaru
 
 # TARGET PLATFORM
@@ -27,15 +27,15 @@ Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in o
 # PDFIUM READ FUNCTIONS
 * <b>PDFium - File Open</b> : This will open PDF from given bytes.
 
-* <b>PDFium - PDFium Get Pages</b>: It will give an Map of (Key: Texture2D, Value: Width and Height) pages as textures.
+* <b>PDFium - PDFium Get Pages</b>: It will give a Map of (Key: Texture2D, Value: Width and Height) pages as textures.
 
 * <b>PDFium - PDFium Get All Texts</b>: It will get all texts of all pages.
 
 * <b>PDFium - PDFium Get Texts</b>: It will get all texts of <b>target page</b> with their styles.
-	* Location
-	* Object Size : Some editors use "1" point for font size and change text object's size with transform matrixes. So, if you want to re-create that PDF file with only font size, you will get very small textures.
-	* Color
+	* Transform (Location, size): Some editors use "1" point for font size and change text object's size with transform matrixes. So, if you want to re-create that PDF file with only font size, you will get very small textures.
+	* Font Size
 	* Font Name
+	* Font Color
 	* Runtime Font Object : It is a container of UFont pointer. Because we have to release it and UFontFace when we want to close game.
 
 * <b>PDFium - Select Text</b>: You can think this as a somekind of text selection. It will get text/strings in a rectangle area.

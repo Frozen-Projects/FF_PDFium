@@ -86,6 +86,7 @@ bool APDFium_Save::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString Expo
 
 	Writer.version = 1;
 	Writer.WriteBlock = Callback_File;
+
 	FPDF_SaveAsCopy(In_PDF->Document, &Writer, 3);
 
 	return true;
