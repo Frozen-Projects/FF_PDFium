@@ -9,6 +9,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "ImageUtils.h"  
+#include "ImageCore.h"
+
+#include "Algo/Reverse.h"
 
 // UE Rendering Includes.
 #include "RHICommandList.h"					
@@ -750,7 +753,6 @@ bool UPDF_ReaderBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPA
 	}
 
 	FPaths::MakeStandardFilename(Font_Path);
-
 	if (FPaths::FileExists(Font_Path) == false)
 	{
 		return false;
@@ -1026,6 +1028,63 @@ bool UPDF_ReaderBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF,
 	FPDFPage_InsertObject(PDF_Page, Image_Object);
 	FPDFPage_GenerateContent(PDF_Page);
 	FPDFBitmap_Destroy(Bitmap);
+	FPDF_ClosePage(PDF_Page);
+
+	return true;
+}
+
+bool UPDF_ReaderBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UTexture2D* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex)
+{
+	if (Global_IsPDFiumInitialized == false)
+	{
+		return false;
+	}
+
+	if (IsValid(In_PDF) == false)
+	{
+		return false;
+	}
+
+	if (!In_PDF->Document)
+	{
+		return false;
+	}
+
+	if (IsValid(In_Texture) == false)
+	{
+		return false;
+	}
+
+	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
+	FPDF_PAGEOBJECT Image_Object = FPDFPageObj_NewImageObj(In_PDF->Document);
+
+	// Raw Colors of Texture2D.
+	FImage Image;
+	FImageUtils::GetTexture2DSourceImage(In_Texture, Image);
+	Image.Format = ERawImageFormat::BGRA8;
+	TArray64<uint8> Buffer = Image.RawData;
+	
+	// Stride Function.
+	int32 Width_Bytes = Image.GetWidth() * Image.GetBytesPerPixel();
+	int32 Padding = (Image.GetBytesPerPixel() - (Width_Bytes) % Image.GetBytesPerPixel()) % Image.GetBytesPerPixel();
+	int32 Stride = (Width_Bytes)+Padding;
+
+	FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Image.GetWidth(), Image.GetHeight(), FPDFBitmap_BGRA, Buffer.GetData(), Stride);
+	FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
+	
+	FS_MATRIX Image_Matrix
+	{
+		static_cast<float>(Image.GetWidth()),
+		static_cast<float>(Rotation.X),
+		static_cast<float>(Rotation.Y),
+		static_cast<float>(Image.GetHeight()),
+		static_cast<float>(Position.X),
+		static_cast<float>(Position.Y),
+	};
+
+	FPDFPageObj_SetMatrix(Image_Object, &Image_Matrix);
+	FPDFPage_InsertObject(PDF_Page, Image_Object);
+	FPDFPage_GenerateContent(PDF_Page);
 	FPDF_ClosePage(PDF_Page);
 
 	return true;

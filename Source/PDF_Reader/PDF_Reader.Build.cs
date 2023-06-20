@@ -51,6 +51,7 @@ public class PDF_Reader : ModuleRules
                 "Projects",
                 "RHI",
 				"RenderCore",
+				"ImageCore",
                 "ExtendedVars",
 				// ... add private dependencies that you statically link with here ...	
 			}
