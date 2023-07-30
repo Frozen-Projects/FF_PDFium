@@ -1,8 +1,8 @@
 ﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "PDF_ReaderBPLibrary.h"
-#include "PDF_Reader.h"
-#include "PDF_CharCodes.h"
+#include "FF_PDFiumBPLibrary.h"
+#include "FF_PDFium.h"
+#include "FF_PDFium_CharCodes.h"
 
 // UE Mechanics Includes.
 #include "Misc/Base64.h"
@@ -33,7 +33,7 @@ bool Global_IsPDFiumInitialized = false;
 // Global documents pool.
 TSet<FPDF_DOCUMENT> Global_Docs_Pool;
 
-UPDF_ReaderBPLibrary::UPDF_ReaderBPLibrary(const FObjectInitializer& ObjectInitializer)
+UFF_PDFiumBPLibrary::UFF_PDFiumBPLibrary(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
 {
 	if (HasAnyFlags(RF_ClassDefaultObject) == false)
@@ -42,7 +42,7 @@ UPDF_ReaderBPLibrary::UPDF_ReaderBPLibrary(const FObjectInitializer& ObjectIniti
 	}
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_LibInit(FString& Out_Code)
+bool UFF_PDFiumBPLibrary::PDFium_LibInit(FString& Out_Code)
 {
 	if (Global_IsPDFiumInitialized == true)
 	{
@@ -61,13 +61,13 @@ bool UPDF_ReaderBPLibrary::PDFium_LibInit(FString& Out_Code)
 
 	Global_IsPDFiumInitialized = true;
 
-	PDF_CharCodes::DefineCharcodes();
+	FF_PDFium_CharCodes::DefineCharcodes();
 
 	Out_Code = "Library successfully initialized.";
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_LibClose(FString& Out_Code)
+bool UFF_PDFiumBPLibrary::PDFium_LibClose(FString& Out_Code)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -94,12 +94,12 @@ bool UPDF_ReaderBPLibrary::PDFium_LibClose(FString& Out_Code)
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_LibState()
+bool UFF_PDFiumBPLibrary::PDFium_LibState()
 {
 	return Global_IsPDFiumInitialized;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_File_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
+bool UFF_PDFiumBPLibrary::PDFium_File_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -123,7 +123,7 @@ bool UPDF_ReaderBPLibrary::PDFium_File_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Close_All_Docs()
+bool UFF_PDFiumBPLibrary::PDFium_Close_All_Docs()
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -146,15 +146,17 @@ bool UPDF_ReaderBPLibrary::PDFium_Close_All_Docs()
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_File_Open(UPDFiumDoc*& Out_PDF, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password)
+bool UFF_PDFiumBPLibrary::PDFium_File_Open(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password)
 {
 	if (IsValid(In_Bytes_Object) == false)
 	{
+		ErrorCode = "Bytes object is invalid.";
 		return false;
 	}
 
 	if (In_Bytes_Object->ByteArray.Num() == 0)
 	{
+		ErrorCode = "There is no bytes.";
 		return false;
 	}
 
@@ -168,6 +170,7 @@ bool UPDF_ReaderBPLibrary::PDFium_File_Open(UPDFiumDoc*& Out_PDF, UPARAM(ref)UBy
 
 	if (!PDF_Object->Document)
 	{
+		ErrorCode = "PDF is invalid.";
 		return false;
 	}
 
@@ -175,6 +178,7 @@ bool UPDF_ReaderBPLibrary::PDFium_File_Open(UPDFiumDoc*& Out_PDF, UPARAM(ref)UBy
 	
 	Out_PDF = PDF_Object;
 
+	ErrorCode = "Success.";
 	return true;
 }
 
@@ -208,7 +212,7 @@ void RenderWithMatrixCallback(FVector2D Size, FPDF_PAGE Page, FPDF_BITMAP Bitmap
 	FlushRenderingCommands();
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling, FColor BG_Color, bool bUseSrgb)
+bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling, FColor BG_Color, bool bUseSrgb)
 {	
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -278,7 +282,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pa
 	}
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb)
+bool UFF_PDFiumBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -348,7 +352,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_I
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Get_All_Texts(TArray<FString>& Out_Texts, UPARAM(ref)UPDFiumDoc*& In_PDF)
+bool UFF_PDFiumBPLibrary::PDFium_Get_All_Texts(TArray<FString>& Out_Texts, UPARAM(ref)UPDFiumDoc*& In_PDF)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -387,7 +391,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Get_All_Texts(TArray<FString>& Out_Texts, UPAR
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex)
+bool UFF_PDFiumBPLibrary::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -481,7 +485,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, U
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Get_Links(TArray<FString>& Out_Links, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex)
+bool UFF_PDFiumBPLibrary::PDFium_Get_Links(TArray<FString>& Out_Links, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -533,7 +537,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Get_Links(TArray<FString>& Out_Links, UPARAM(r
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Select_Text(FString& Out_Text, UPARAM(ref)UPDFiumDoc*& In_PDF, FVector2D Start, FVector2D End, int32 PageIndex)
+bool UFF_PDFiumBPLibrary::PDFium_Select_Text(FString& Out_Text, UPARAM(ref)UPDFiumDoc*& In_PDF, FVector2D Start, FVector2D End, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -570,7 +574,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Select_Text(FString& Out_Text, UPARAM(ref)UPDF
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos, UPARAM(ref)UPDFiumDoc*& In_PDF)
+bool UFF_PDFiumBPLibrary::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos, UPARAM(ref)UPDFiumDoc*& In_PDF)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -601,7 +605,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Info
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Create_Doc(UPDFiumDoc*& Out_PDF)
+bool UFF_PDFiumBPLibrary::PDFium_Create_Doc(UPDFiumDoc*& Out_PDF)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -618,7 +622,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Create_Doc(UPDFiumDoc*& Out_PDF)
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Add_Pages(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<FVector2D> Pages)
+bool UFF_PDFiumBPLibrary::PDFium_Add_Pages(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<FVector2D> Pages)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -648,7 +652,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Add_Pages(UPARAM(ref)UPDFiumDoc*& In_PDF, TArr
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, UPARAM(ref)UPDFiumDoc*& In_PDF, EStandartFonts Font_Name)
+bool UFF_PDFiumBPLibrary::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, UPARAM(ref)UPDFiumDoc*& In_PDF, EStandartFonts Font_Name)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -730,7 +734,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, UPA
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPARAM(ref)UPDFiumDoc*& In_PDF, FString Font_Path, EExternalFonts In_Font_Type, bool bIsCid)
+bool UFF_PDFiumBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPARAM(ref)UPDFiumDoc*& In_PDF, FString Font_Path, EExternalFonts In_Font_Type, bool bIsCid)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -786,7 +790,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPA
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Close_Font(UPARAM(ref)UPDFiumFont*& In_Font)
+bool UFF_PDFiumBPLibrary::PDFium_Close_Font(UPARAM(ref)UPDFiumFont*& In_Font)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -803,7 +807,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Close_Font(UPARAM(ref)UPDFiumFont*& In_Font)
 	return true;
 }
 
-void UPDF_ReaderBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes, bool bGetCharcodesFromDb)
+void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes, bool bGetCharcodesFromDb)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -944,7 +948,7 @@ void UPDF_ReaderBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, U
 
 						if (bGetCharcodesFromDb == true)
 						{
-							CharCodes[Index_Chars] = *PDF_CharCodes::Global_Char_To_ASCII.Find(Char);
+							CharCodes[Index_Chars] = *FF_PDFium_CharCodes::Global_Char_To_ASCII.Find(Char);
 						}
 
 						else
@@ -988,7 +992,7 @@ void UPDF_ReaderBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, U
 	);
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, FVector2D Position, FVector2D Anchor, FVector2D Size, FVector2D Rotation, FColor Color, int32 PageIndex)
+bool UFF_PDFiumBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, FVector2D Position, FVector2D Anchor, FVector2D Size, FVector2D Rotation, FColor Color, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -1033,7 +1037,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF,
 	return true;
 }
 
-bool UPDF_ReaderBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UTexture2D* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex)
+bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UTexture2D* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -1063,7 +1067,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UTex
 	FImageUtils::GetTexture2DSourceImage(In_Texture, Image);
 	Image.Format = ERawImageFormat::BGRA8;
 	TArray64<uint8> Buffer = Image.RawData;
-	
+
 	// Stride Function.
 	int32 Width_Bytes = Image.GetWidth() * Image.GetBytesPerPixel();
 	int32 Padding = (Image.GetBytesPerPixel() - (Width_Bytes) % Image.GetBytesPerPixel()) % Image.GetBytesPerPixel();
@@ -1071,7 +1075,7 @@ bool UPDF_ReaderBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UTex
 
 	FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Image.GetWidth(), Image.GetHeight(), FPDFBitmap_BGRA, Buffer.GetData(), Stride);
 	FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
-	
+
 	FS_MATRIX Image_Matrix
 	{
 		static_cast<float>(Image.GetWidth()),

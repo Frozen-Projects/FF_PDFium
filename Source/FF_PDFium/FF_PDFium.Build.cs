@@ -4,15 +4,15 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
-public class PDF_Reader : ModuleRules
+public class FF_PDFium : ModuleRules
 {
-	public PDF_Reader(ReadOnlyTargetRules Target) : base(Target)
+	public FF_PDFium(ReadOnlyTargetRules Target) : base(Target)
 	{
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
         if (UnrealTargetPlatform.Win64 == Target.Platform)
         {
-            string Location_PDFium = "../Source/PDF_Reader/ThirdParty/pdfium/Windows/include";
+            string Location_PDFium = "../Source/FF_PDFium/ThirdParty/pdfium/Windows/include";
             PrivateIncludePaths.Add(Location_PDFium);
             
 			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Windows", "lib", "pdfium.dll.lib"));
@@ -25,12 +25,12 @@ public class PDF_Reader : ModuleRules
             // We need it for #include "AndroidPlatform.h" in fpdview.h. Because default #define DLLEXPORT makes clash with Unreal's defination. We comment it out and include AndroidPlatform.h
             PublicIncludePaths.Add(Path.Combine(EngineDirectory, "Source", "Runtime", "Core", "Public", "Android"));
 
-            string Location_PDFium = "../Source/PDF_Reader/ThirdParty/pdfium/Android/include";
+            string Location_PDFium = "../Source/FF_PDFium/ThirdParty/pdfium/Android/include";
             PrivateIncludePaths.Add(Location_PDFium);
 
             PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Android", "lib", "arm64-v8a", "libpdfium.so"));
 
-            AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "PDF_Reader_UPL_Android.xml"));
+            AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "FF_PDFium_UPL_Android.xml"));
         }
 
         PublicDependencyModuleNames.AddRange(

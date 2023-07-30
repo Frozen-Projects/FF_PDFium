@@ -1,17 +1,17 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PDF_CharCodes.h"
+#include "FF_PDFium_CharCodes.h"
 
-PDF_CharCodes::PDF_CharCodes()
+FF_PDFium_CharCodes::FF_PDFium_CharCodes()
 {
 }
 
-PDF_CharCodes::~PDF_CharCodes()
+FF_PDFium_CharCodes::~FF_PDFium_CharCodes()
 {
 }
 
-void PDF_CharCodes::DefineCharcodes()
+void FF_PDFium_CharCodes::DefineCharcodes()
 {
 	Global_ASCII_to_Char.Add(10, "\n");
 	Global_ASCII_to_Char.Add(32, " ");

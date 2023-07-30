@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "PDFium_Save.h"
+#include "FF_PDFium_Save.h"
 
 #include "Misc/FileHelper.h"
 
@@ -59,7 +59,7 @@ int Callback_Bytes(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)
 
 bool APDFium_Save::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString Export_Path)
 {
-	if (UPDF_ReaderBPLibrary::PDFium_LibState() == false)
+	if (UFF_PDFiumBPLibrary::PDFium_LibState() == false)
 	{
 		return false;
 	}
@@ -94,7 +94,7 @@ bool APDFium_Save::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString Expo
 
 bool APDFium_Save::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, UPARAM(ref)UPDFiumDoc*& In_PDF)
 {
-	if (UPDF_ReaderBPLibrary::PDFium_LibState() == false)
+	if (UFF_PDFiumBPLibrary::PDFium_LibState() == false)
 	{
 		return false;
 	}

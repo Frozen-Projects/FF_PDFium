@@ -1,15 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "PDF_Reader.h"
+#include "FF_PDFium.h"
 #include "Interfaces/IPluginManager.h"
 
-#define LOCTEXT_NAMESPACE "FPDF_ReaderModule"
+#define LOCTEXT_NAMESPACE "FFF_PDFiumModule"
 
-void FPDF_ReaderModule::StartupModule()
+void FFF_PDFiumModule::StartupModule()
 {
 #ifdef _WIN64
-	const FString BasePluginDir = IPluginManager::Get().FindPlugin("PDF_READER")->GetBaseDir();
-	const FString DLL_Path = FPaths::Combine(*BasePluginDir, TEXT("Source/PDF_Reader/ThirdParty/pdfium/Windows/lib/pdfium.dll"));
+	const FString BasePluginDir = IPluginManager::Get().FindPlugin("FF_PDFium")->GetBaseDir();
+	const FString DLL_Path = FPaths::Combine(*BasePluginDir, TEXT("Source/FF_PDFium/ThirdParty/pdfium/Windows/lib/pdfium.dll"));
 	PDFium_Handle = FPlatformProcess::GetDllHandle(*DLL_Path);
 
 	if (PDFium_Handle != nullptr)
@@ -24,7 +24,7 @@ void FPDF_ReaderModule::StartupModule()
 #endif
 }
 
-void FPDF_ReaderModule::ShutdownModule()
+void FFF_PDFiumModule::ShutdownModule()
 {
 #ifdef _WIN64
 	FPlatformProcess::FreeDllHandle(PDFium_Handle);
@@ -34,4 +34,4 @@ void FPDF_ReaderModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FPDF_ReaderModule, PDF_Reader)
+IMPLEMENT_MODULE(FFF_PDFiumModule, FF_PDFium)

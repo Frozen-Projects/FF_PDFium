@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 
-class PDF_READER_API PDF_CharCodes
+class FF_PDFIUM_API FF_PDFium_CharCodes
 {
 public:
-	PDF_CharCodes();
-	~PDF_CharCodes();
+	FF_PDFium_CharCodes();
+	~FF_PDFium_CharCodes();
 
 	static inline TMap<FString, uint32_t> Global_Char_To_ASCII;
 

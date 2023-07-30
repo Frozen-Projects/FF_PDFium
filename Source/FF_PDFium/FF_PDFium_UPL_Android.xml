@@ -2,7 +2,7 @@
 <root xmlns:android="http://schemas.android.com/apk/res/android">
 	<!-- init section is always evaluated once per architecture -->
 	<init>
-		<log text="PDF_Reader"/>
+		<log text="FF_PDFium"/>
 		<setBool result="bCpuArchSupported" value="false"/>
 		<isArch arch="arm64-v8a">
 			<setBool result="bCpuArchSupported" value="true"/>
@@ -26,7 +26,7 @@
 		<if condition="bCpuArchSupported">
 			<true>
 				
-				<loadLibrary name="libpdfium" failmsg="libmodft2 library not loaded and may be required for PDF_Reader." />
+				<loadLibrary name="libpdfium" failmsg="libmodft2 library not loaded and may be required for FF_PDFium." />
 				
 			</true>
 		</if>

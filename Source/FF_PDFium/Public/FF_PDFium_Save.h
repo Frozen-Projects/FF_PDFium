@@ -5,16 +5,16 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
-#include "PDF_ReaderBPLibrary.h"
+#include "FF_PDFiumBPLibrary.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "fpdf_save.h"
 THIRD_PARTY_INCLUDES_END
 
-#include "PDFium_Save.generated.h"
+#include "FF_PDFium_Save.generated.h"
 
 UCLASS()
-class PDF_READER_API APDFium_Save : public AActor
+class FF_PDFIUM_API APDFium_Save : public AActor
 {
 	GENERATED_BODY()
 	

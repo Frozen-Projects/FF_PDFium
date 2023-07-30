@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "1.0",
-	"FriendlyName": "PDF_Reader",
+	"FriendlyName": "FF_PDFium",
 	"Description": "",
 	"Category": "Frozen Forest",
 	"CreatedBy": "Frozen Forest Reality Technologies",
@@ -16,7 +16,7 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "PDF_Reader",
+			"Name": "FF_PDFium",
 			"Type": "Runtime",
 			"LoadingPhase": "PreLoadingScreen"
 		}

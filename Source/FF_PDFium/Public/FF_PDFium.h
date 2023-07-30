@@ -4,7 +4,7 @@
 
 #include "Modules/ModuleManager.h"
 
-class FPDF_ReaderModule : public IModuleInterface
+class FFF_PDFiumModule : public IModuleInterface
 {
 public:
 

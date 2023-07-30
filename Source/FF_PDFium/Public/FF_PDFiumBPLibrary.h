@@ -25,7 +25,7 @@ THIRD_PARTY_INCLUDES_END
 
 #include "ExtendedVarsBPLibrary.h"
 
-#include "PDF_ReaderBPLibrary.generated.h"
+#include "FF_PDFiumBPLibrary.generated.h"
 
 USTRUCT(BlueprintType)
 struct FPdfTextObject
@@ -67,7 +67,7 @@ public:
 };
 
 UCLASS(BlueprintType)
-class PDF_READER_API UPDFiumDoc : public UObject
+class FF_PDFIUM_API UPDFiumDoc : public UObject
 {
 	GENERATED_BODY()
 
@@ -77,7 +77,7 @@ public:
 };
 
 UCLASS(BlueprintType)
-class PDF_READER_API UPDFiumFont : public UObject
+class FF_PDFIUM_API UPDFiumFont : public UObject
 {
 	GENERATED_BODY()
 
@@ -90,7 +90,7 @@ UDELEGATE(BlueprintAuthorityOnly)
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FDelegatePdfium, bool, bIsSuccessfull, FString, OutCode);
 
 UCLASS()
-class UPDF_ReaderBPLibrary : public UBlueprintFunctionLibrary
+class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
 
@@ -110,7 +110,7 @@ class UPDF_ReaderBPLibrary : public UBlueprintFunctionLibrary
 	static bool PDFium_Close_All_Docs();
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open File", ToolTip = "", Keywords = "pdfium, pdf, read, open"), Category = "PDFium|Read")
-	static bool PDFium_File_Open(UPDFiumDoc*& Out_PDF, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password);
+	static bool PDFium_File_Open(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password);
 
 	/**
 	* @param In_Sampling Default (also minimum) value is "1" but "2" gives best result for A4 sized PDF on 17 inch notebook screen. Bigger values is good for 3D widget like huge UIs.
