@@ -2,7 +2,6 @@
 
 #include "FF_PDFiumBPLibrary.h"
 #include "FF_PDFium.h"
-#include "FF_PDFium_CharCodes.h"
 
 // UE Mechanics Includes.
 #include "Misc/Base64.h"
@@ -316,15 +315,6 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Im
 			{
 				return false;
 			}
-
-			FImageView ImageView;
-			ImageView.RawData = Each_Buffer;
-			ImageView.Format = ERawImageFormat::BGRA8;
-			ImageView.SizeX = TextureSize.X;
-			ImageView.SizeY = TextureSize.Y;
-			
-			TArray64<uint8> CompressedBuffer;
-			FImageUtils::CompressImage(CompressedBuffer, TEXT("png"), ImageView);
 
 			size_t Each_Buffer_Lenght = static_cast<SIZE_T>(TextureSize.X * TextureSize.Y * 4);
 

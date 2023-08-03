@@ -120,7 +120,7 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	static bool PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling = 1, FColor BG_Color = FColor::White, bool bUseSrgb = true);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Get Images", Keywords = "pdfium, pdf, read, get, images"), Category = "PDFium|Read")
-	static bool PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb = false);
+	static bool PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb = true);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Get All Texts", Keywords = "pdfium, pdf, read, get, all, texts, string"), Category = "PDFium|Read")
 	static bool PDFium_Get_All_Texts(TArray<FString>& Out_Texts, UPARAM(ref)UPDFiumDoc*& In_PDF);
