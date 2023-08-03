@@ -9,17 +9,13 @@ https://github.com/FF-Projects-UE/HTTP_Client
 2- <b>Extended Variables</b> for bytes and font related functions<br />
 https://github.com/FF-Projects-UE/ExtendedVars
 
-# RELATED PLUGINS
-1- UE_LibHaru (Use this if you want to create PDF with images.)
-https://github.com/FF-Projects-UE/UE_LibHaru
-
 # TARGET PLATFORM
 * Plugin is for Unreal Engine 5.1 and up.
 * This is a "runtime" plugin. It won't work on editor.
 * It supports both Windows and Android.
 
 # HELPER FUNCTIONS
-Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in order to support this kind of large PDF loadings, we capsulated that array to an <b>BytesObject_32 and BytesObject_32 with Extended Variables plugin.</b>.
+* Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in order to support this kind of large PDF loadings, we capsulated that array to an <b>BytesObject_32 and BytesObject_32 with Extended Variables plugin.</b>.
 
 # PDFIUM SYSTEM FUNCTIONS
 * <b>PDFium - LibInit / PDF_LibClose / PDF_LibState</b>: It will initialize, close and give state of PDFium library.
@@ -69,6 +65,8 @@ Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in o
 	* Border X and Y = It defines vertical and horizontal borders.
 	* Use Charcodes: Frontend usage from blueprints are same but at backend it switches between ASCII Decimal based "FPDFText_SetCharcodes()" and "FPDFText_SetText()". Charcodes has better character support.
 
+* <b>PDFium - Draw Rectangle</b>: Add Image. It can add BGRA8 UTexture2D and UTextureRenderTarget2D to PDF file. Textures shouldn't be DXT variations.
+
 * <b>PDFium - Draw Rectangle</b>: It will draw a rectangle on PDF file with given location, size and color.
 
 * <b>PDFium - Save File</b>: You need to spawn <b>PDFium_Save</b> actor class to save your PDF files. If you need to save multiple PDF files at the same time, you need to spawn that actor for each of them.
@@ -87,5 +85,4 @@ Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in o
 * PDFium - Rotation functions.
 
 # LIMITATION
-* Currently it doesn't support image adding. If you want to add images to PDF, use UE_LibHaru plugin which mentioned on <b>Related Projects</b> section. It has same functions with same usages with PDFium.<br /> Also you can get bytes of LibHaru based PDF to open it with PDFium.
 * Some external web fonts cause crash. So, it would be good to test your fonts at development stage and give them to your customers.

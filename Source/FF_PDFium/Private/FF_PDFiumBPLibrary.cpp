@@ -8,23 +8,20 @@
 #include "Misc/Base64.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetStringLibrary.h"
+
+#include "Engine/TextureRenderTarget2D.h"
 #include "ImageUtils.h"  
 #include "ImageCore.h"
-
-#include "Algo/Reverse.h"
 
 // UE Rendering Includes.
 #include "RHICommandList.h"					
 #include "RenderingThread.h"
 
 THIRD_PARTY_INCLUDES_START
-// C++ Includes.
-#include <fstream>
-
 // PDFium Includes.
-#include "fpdf_formfill.h"
 #include "fpdf_text.h"
 #include "fpdf_edit.h"
+#include "fpdf_formfill.h"
 THIRD_PARTY_INCLUDES_END
 
 // Global library initialization checker.
@@ -60,8 +57,6 @@ bool UFF_PDFiumBPLibrary::PDFium_LibInit(FString& Out_Code)
 	FPDF_InitLibraryWithConfig(&config);
 
 	Global_IsPDFiumInitialized = true;
-
-	FF_PDFium_CharCodes::DefineCharcodes();
 
 	Out_Code = "Library successfully initialized.";
 	return true;
@@ -807,7 +802,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Close_Font(UPARAM(ref)UPDFiumFont*& In_Font)
 	return true;
 }
 
-void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes, bool bGetCharcodesFromDb)
+void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -839,7 +834,7 @@ void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UP
 		DelegateAddObject.Execute(false, "PDFium font is invalid.");
 	}
 
-	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [DelegateAddObject, &In_PDF, In_Font, In_Texts, Text_Color, Position, Size, Rotation, Border, FontSize, PageIndex, bUseCharcodes, bGetCharcodesFromDb]()
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [DelegateAddObject, &In_PDF, In_Font, In_Texts, Text_Color, Position, Size, Rotation, Border, FontSize, PageIndex, bUseCharcodes]()
 		{
 			FPDF_PAGE First_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 			TArray<FPDF_PAGE> Array_Pages;
@@ -941,23 +936,14 @@ void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UP
 					TArray<FString> Array_Chars = UKismetStringLibrary::GetCharacterArrayFromString(Each_Line);
 					int32 CharsCount = Array_Chars.Num();
 
-					uint32_t* CharCodes = (uint32_t*)malloc(CharsCount * sizeof(uint32_t));
+					TArray<uint32_t> CharCodes;
 					for (int32 Index_Chars = 0; Index_Chars < CharsCount; Index_Chars++)
 					{
 						FString Char = Array_Chars[Index_Chars];
-
-						if (bGetCharcodesFromDb == true)
-						{
-							CharCodes[Index_Chars] = *FF_PDFium_CharCodes::Global_Char_To_ASCII.Find(Char);
-						}
-
-						else
-						{
-							CharCodes[Index_Chars] = UKismetStringLibrary::GetCharacterAsNumber(Char, 0);
-						}
+						CharCodes.Add(UKismetStringLibrary::GetCharacterAsNumber(Char));
 					}
 					
-					FPDFText_SetCharcodes(TextObject, CharCodes, CharsCount);
+					FPDFText_SetCharcodes(TextObject, CharCodes.GetData(), CharsCount);
 				}
 
 				else
@@ -1037,7 +1023,96 @@ bool UFF_PDFiumBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, 
 	return true;
 }
 
-bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UTexture2D* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex)
+bool PDF_Image_Callback(UObject* Target_Image, FPDF_PAGEOBJECT Image_Object, FVector2D& Out_Size)
+{
+	UTexture2D* Texture2D = Cast<UTexture2D>(Target_Image);
+	TArray64<uint8_t> Bytes;
+
+	if (Texture2D)
+	{
+		Out_Size = FVector2D(Texture2D->GetSizeX(), Texture2D->GetSizeY());
+
+#if WITH_EDITOR
+
+		FImage Image;
+		FImageUtils::GetTexture2DSourceImage(Texture2D, Image);
+
+		Bytes.SetNum(Image.RawData.Num());
+		FMemory::Memcpy(Bytes.GetData(), Image.RawData.GetData(), Image.RawData.Num());
+
+#else
+
+		if (Texture2D->GetPixelFormat() == EPixelFormat::PF_B8G8R8A8 && Texture2D->CompressionSettings.GetIntValue() == 5 || Texture2D->CompressionSettings.GetIntValue() == 7)
+		{
+			FTexture2DMipMap& Texture_Mip = Texture2D->GetPlatformData()->Mips[0];
+			void* Texture_Data = Texture_Mip.BulkData.Lock(LOCK_READ_WRITE);
+
+			int64 BufferSize = Size.X * Size.Y * 4;
+			if (BufferSize > Texture_Mip.BulkData.GetBulkDataSize())
+			{
+				UE_LOG(LogTemp, Display, TEXT("PDFium PDF : Texture settings are not compatible."))
+
+				Texture_Mip.BulkData.Unlock();
+
+				return NULL;
+			}
+
+			Bytes.SetNum(BufferSize);
+			FMemory::Memcpy(Bytes.GetData(), (uint8_t*)Texture_Data, Size.X * Size.Y * 4);
+
+			Texture_Mip.BulkData.Unlock();
+
+			UE_LOG(LogTemp, Display, TEXT("PDFium PDF : Texture2D image insertion from runtime."))
+		}
+
+		else
+		{
+			UE_LOG(LogTemp, Display, TEXT("PDFium PDF : Texture settings are not compatible."))
+
+			return NULL;
+		}
+
+#endif // WITH_EDITOR
+	}
+
+	UTextureRenderTarget2D* TRT2D = Cast<UTextureRenderTarget2D>(Target_Image);
+
+	if (TRT2D)
+	{
+		Out_Size = FVector2D(TRT2D->SizeX, TRT2D->SizeY);
+		FImageUtils::GetRawData(TRT2D, Bytes);
+
+		UE_LOG(LogTemp, Display, TEXT("PDFium PDF : TextureRenderTarget2D image insertion."))
+	}
+
+	if (!Texture2D && !TRT2D)
+	{
+		UE_LOG(LogTemp, Display, TEXT("PDFium PDF : There is no image to read."))
+
+		return false;
+	}
+
+	// Stride Function.
+	int32 BytesPerPixel = 4;
+	int32 Width_Bytes = Out_Size.X * BytesPerPixel;
+	int32 Padding = (BytesPerPixel - (Width_Bytes) % BytesPerPixel) % BytesPerPixel;
+	int32 Stride = (Width_Bytes)+Padding;
+
+	FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Out_Size.X, Out_Size.Y, FPDFBitmap_BGRA, Bytes.GetData(), Stride);
+	FPDF_BOOL Result = FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
+
+	if (Result == 1)
+	{
+		return true;
+	}
+
+	else
+	{
+		return false;
+	}
+}
+
+bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UObject* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -1062,34 +1137,35 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UText
 	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 	FPDF_PAGEOBJECT Image_Object = FPDFPageObj_NewImageObj(In_PDF->Document);
 
-	// Raw Colors of Texture2D.
-	FImage Image;
-	FImageUtils::GetTexture2DSourceImage(In_Texture, Image);
-	Image.Format = ERawImageFormat::BGRA8;
-	TArray64<uint8> Buffer = Image.RawData;
-
-	// Stride Function.
-	int32 Width_Bytes = Image.GetWidth() * Image.GetBytesPerPixel();
-	int32 Padding = (Image.GetBytesPerPixel() - (Width_Bytes) % Image.GetBytesPerPixel()) % Image.GetBytesPerPixel();
-	int32 Stride = (Width_Bytes)+Padding;
-
-	FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Image.GetWidth(), Image.GetHeight(), FPDFBitmap_BGRA, Buffer.GetData(), Stride);
-	FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
+	FVector2D Size;
+	if (!PDF_Image_Callback(In_Texture, Image_Object, Size))
+	{
+		return false;
+	}
 
 	FS_MATRIX Image_Matrix
 	{
-		static_cast<float>(Image.GetWidth()),
+		static_cast<float>(Size.X),
 		static_cast<float>(Rotation.X),
 		static_cast<float>(Rotation.Y),
-		static_cast<float>(Image.GetHeight()),
+		static_cast<float>(Size.Y),
 		static_cast<float>(Position.X),
 		static_cast<float>(Position.Y),
 	};
 
-	FPDFPageObj_SetMatrix(Image_Object, &Image_Matrix);
+	FPDF_BOOL Result = FPDF_ERR_SUCCESS;
+	Result = FPDFPageObj_SetMatrix(Image_Object, &Image_Matrix);
 	FPDFPage_InsertObject(PDF_Page, Image_Object);
-	FPDFPage_GenerateContent(PDF_Page);
+	Result = FPDFPage_GenerateContent(PDF_Page);
 	FPDF_ClosePage(PDF_Page);
 
-	return true;
+	if (Result == 1)
+	{
+		return true;
+	}
+
+	else
+	{
+		return false;
+	}
 }

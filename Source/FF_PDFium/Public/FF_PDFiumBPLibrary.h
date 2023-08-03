@@ -160,12 +160,12 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	* @param bUseCharcodes It switch between "FPDFText_SetCharcodes()" and "FPDFText_SetText()". When you enable CharCodes, you don't need to write your texts as ASCII decimals. System automatically converts it. Also it supports much more characters.
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Add Texts", Keywords = "pdfium, pdf, create, doc, document, add, texts"), Category = "PDF_Reader|PDFium|Write")
-	static void PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color = FColor::Black, FVector2D Position = FVector2D(0.0f, 0.0f), FVector2D Size = FVector2D(1.0f, 1.0f), FVector2D Rotation = FVector2D(0.0f, 0.0f), FVector2D Border = FVector2D(10.0f, 10.0f), int32 FontSize = 12, int32 PageIndex = 0, bool bUseCharcodes = true, bool bGetCharcodesFromDb = false);
+	static void PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color = FColor::Black, FVector2D Position = FVector2D(0.0f, 0.0f), FVector2D Size = FVector2D(1.0f, 1.0f), FVector2D Rotation = FVector2D(0.0f, 0.0f), FVector2D Border = FVector2D(10.0f, 10.0f), int32 FontSize = 12, int32 PageIndex = 0, bool bUseCharcodes = true);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Draw Rectangle", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, add, draw, rectangle"), Category = "PDF_Reader|PDFium|Write")
 	static bool PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, FVector2D Position, FVector2D Anchor, FVector2D Size, FVector2D Rotation, FColor Color = FColor::Blue, int32 PageIndex = 0);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Add Image EXPRIMENTAL", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, add, draw, image"), Category = "PDF_Reader|PDFium|Write")
-	static bool PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UTexture2D* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex = 0);
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Add Image", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, add, draw, image"), Category = "PDF_Reader|PDFium|Write")
+	static bool PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UObject* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex = 0);
 
 };
