@@ -7,8 +7,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetStringLibrary.h"
 
-#include "ImageUtils.h"  
 #include "ImageCore.h"
+#include "ImageUtils.h"  
 #include "Engine/TextureRenderTarget2D.h"
 
 THIRD_PARTY_INCLUDES_START
@@ -16,8 +16,6 @@ THIRD_PARTY_INCLUDES_START
 #include "fpdf_text.h"
 #include "fpdf_edit.h"
 #include "fpdf_formfill.h"
-
-#include <iostream>
 THIRD_PARTY_INCLUDES_END
 
 // Global library initialization checker.
@@ -168,35 +166,19 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pag
 		const double PDF_Page_Height = FPDF_GetPageHeight(PDF_Page);
 		const int32 Render_Width = PDF_Page_Width * Sampling;
 		const int32 Render_Height = PDF_Page_Height * Sampling;
-		const size_t Lenght = static_cast<SIZE_T>(Render_Width * Render_Height * 4);
+		const size_t Lenght = static_cast<size_t>(Render_Width * Render_Height * 4);
 
-		FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Render_Width, Render_Height, (bUseAlpha ? FPDFBitmap_BGRA : FPDFBitmap_BGRx), NULL, 0);
+		FPDF_BITMAP PDF_Bitmap = FPDFBitmap_Create(Render_Width, Render_Height, (bUseAlpha ? FPDFBitmap_BGRA : FPDFBitmap_BGRx));
 		FPDFBitmap_FillRect(PDF_Bitmap, 0, 0, Render_Width, Render_Height, BG_Color.ToPackedARGB());
 		
 		FPDF_FORMHANDLE Form_Handle;
 		FMemory::Memset(&Form_Handle, 0, sizeof(Form_Handle));
 		FPDF_FFLDraw(Form_Handle, PDF_Bitmap, PDF_Page, 0, 0, Render_Width, Render_Height, 0, 0);
-
+		
 		if (bUseMatrix)
 		{
-			const FS_MATRIX Matrix = 
-			{
-				static_cast<float>(Render_Width),
-				0,
-				0,
-				static_cast<float>(Render_Height),
-				0,
-				static_cast<float>(Render_Height)
-			};
-			
-			const FS_RECTF Rect = 
-			{
-				0,
-				0,
-				static_cast<float>(Render_Width),
-				static_cast<float>(Render_Height)
-			};
-
+			const FS_MATRIX Matrix = { static_cast<float>(Render_Width), 0, 0, static_cast<float>(Render_Height), 0, 0 };
+			const FS_RECTF Rect = { 0, 0, static_cast<float>(Render_Width), static_cast<float>(Render_Height) };
 			FPDF_RenderPageBitmapWithMatrix(PDF_Bitmap, PDF_Page, &Matrix, &Rect, (bRenderAnnots ? FPDF_ANNOT : FPDF_LCD_TEXT));
 		}
 
@@ -1020,7 +1002,7 @@ bool PDF_Image_Callback(UObject* Target_Image, FPDF_PAGEOBJECT Image_Object, FVe
 			FTexture2DMipMap& Texture_Mip = Texture2D->GetPlatformData()->Mips[0];
 			void* Texture_Data = Texture_Mip.BulkData.Lock(LOCK_READ_WRITE);
 
-			int64 BufferSize = Size.X * Size.Y * 4;
+			int64 BufferSize = Out_Size.X * Out_Size.Y * 4;
 			if (BufferSize > Texture_Mip.BulkData.GetBulkDataSize())
 			{
 				UE_LOG(LogTemp, Display, TEXT("PDFium PDF : Texture settings are not compatible."))
@@ -1031,7 +1013,7 @@ bool PDF_Image_Callback(UObject* Target_Image, FPDF_PAGEOBJECT Image_Object, FVe
 			}
 
 			Bytes.SetNum(BufferSize);
-			FMemory::Memcpy(Bytes.GetData(), (uint8_t*)Texture_Data, Size.X * Size.Y * 4);
+			FMemory::Memcpy(Bytes.GetData(), (uint8_t*)Texture_Data, BufferSize);
 
 			Texture_Mip.BulkData.Unlock();
 
