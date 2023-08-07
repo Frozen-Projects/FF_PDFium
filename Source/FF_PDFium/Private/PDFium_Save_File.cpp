@@ -9,9 +9,6 @@ THIRD_PARTY_INCLUDES_START
 #include "fpdf_edit.h"
 THIRD_PARTY_INCLUDES_END
 
-// Global path variable for saving PDF files.
-FString Global_Export_Path;
-
 // Global bytes array for saving PDF files.
 TArray64<uint8> PDF_Bytes;
 
@@ -69,8 +66,6 @@ bool APDFium_Save_File::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString
 	{
 		return false;
 	}
-
-	Global_Export_Path = Export_Path;
 	
 	// We need to clear byte array before executing new save.
 	PDF_Bytes.Empty();
@@ -82,10 +77,19 @@ bool APDFium_Save_File::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString
 	Writer.WriteBlock = Callback_File;
 
 	FPDF_SaveAsCopy(In_PDF->Document, &Writer, FPDF_INCREMENTAL);
-	FFileHelper::SaveArrayToFile(PDF_Bytes, *Global_Export_Path);
 	
-	// We need to clear byte array after executing save.
-	PDF_Bytes.Empty();
+	if (PDF_Bytes.Num() > 0)
+	{
+		FFileHelper::SaveArrayToFile(PDF_Bytes, *Export_Path);
 
-	return true;
+		// We need to clear byte array after executing save.
+		PDF_Bytes.Empty();
+
+		return true;
+	}
+	
+	else
+	{
+		return false;
+	}
 }
