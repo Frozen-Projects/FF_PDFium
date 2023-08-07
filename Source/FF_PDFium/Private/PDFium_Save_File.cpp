@@ -12,6 +12,7 @@ THIRD_PARTY_INCLUDES_END
 // Global path variable for saving PDF files.
 FString Global_Export_Path;
 
+// Global bytes array for saving PDF files.
 TArray64<uint8> PDF_Bytes;
 
 // Sets default values
@@ -25,6 +26,13 @@ APDFium_Save_File::APDFium_Save_File()
 void APDFium_Save_File::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void APDFium_Save_File::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	PDF_Bytes.Empty();
+	
+	Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -63,6 +71,9 @@ bool APDFium_Save_File::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString
 	}
 
 	Global_Export_Path = Export_Path;
+	
+	// We need to clear byte array before executing new save.
+	PDF_Bytes.Empty();
 
 	FPDF_FILEWRITE Writer;
 	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
@@ -72,6 +83,8 @@ bool APDFium_Save_File::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString
 
 	FPDF_SaveAsCopy(In_PDF->Document, &Writer, FPDF_INCREMENTAL);
 	FFileHelper::SaveArrayToFile(PDF_Bytes, *Global_Export_Path);
+	
+	// We need to clear byte array after executing save.
 	PDF_Bytes.Empty();
 
 	return true;

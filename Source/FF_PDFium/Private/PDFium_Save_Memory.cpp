@@ -7,7 +7,7 @@ THIRD_PARTY_INCLUDES_START
 #include "fpdf_edit.h"
 THIRD_PARTY_INCLUDES_END
 
-// Global bytes variable for PDF bytes.
+// Global bytes object for PDF file.
 UBytesObject_64* Global_Bytes_Object = nullptr;
 
 // Sets default values
@@ -21,6 +21,16 @@ APDFium_Save_Memory::APDFium_Save_Memory()
 void APDFium_Save_Memory::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void APDFium_Save_Memory::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (IsValid(Global_Bytes_Object))
+	{
+		Global_Bytes_Object = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -56,6 +66,12 @@ bool APDFium_Save_Memory::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, UPARAM(
 	if (!In_PDF->Document)
 	{
 		return false;
+	}
+
+	// We need to clear byte array before executing new save.
+	if (IsValid(Global_Bytes_Object))
+	{
+		Global_Bytes_Object->ByteArray.Empty();
 	}
 
 	FPDF_FILEWRITE Writer;

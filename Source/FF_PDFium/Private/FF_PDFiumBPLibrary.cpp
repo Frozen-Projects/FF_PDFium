@@ -4,30 +4,24 @@
 #include "FF_PDFium.h"
 
 // UE Mechanics Includes.
-#include "Misc/Base64.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetStringLibrary.h"
 
-#include "Engine/TextureRenderTarget2D.h"
 #include "ImageUtils.h"  
 #include "ImageCore.h"
-
-// UE Rendering Includes.
-#include "RHICommandList.h"					
-#include "RenderingThread.h"
+#include "Engine/TextureRenderTarget2D.h"
 
 THIRD_PARTY_INCLUDES_START
 // PDFium Includes.
 #include "fpdf_text.h"
 #include "fpdf_edit.h"
 #include "fpdf_formfill.h"
+
+#include <iostream>
 THIRD_PARTY_INCLUDES_END
 
 // Global library initialization checker.
 bool Global_IsPDFiumInitialized = false;
-
-// Global documents pool.
-TSet<FPDF_DOCUMENT> Global_Docs_Pool;
 
 UFF_PDFiumBPLibrary::UFF_PDFiumBPLibrary(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
@@ -68,18 +62,6 @@ bool UFF_PDFiumBPLibrary::PDFium_LibClose(FString& Out_Code)
 		Out_Code = "Library already closed.";
 		return false;
 	}
-	
-	TArray<FPDF_DOCUMENT> Array_Docs = Global_Docs_Pool.Array();
-	for (int32 Index_Docs = 0; Index_Docs < Array_Docs.Num(); Index_Docs++)
-	{
-		if (Array_Docs[Index_Docs])
-		{
-			FPDF_CloseDocument(Array_Docs[Index_Docs]);
-		}
-	}
-	
-	Array_Docs.Empty();
-	Global_Docs_Pool.Empty();
 
 	Global_IsPDFiumInitialized = false;
 	FPDF_DestroyLibrary();
@@ -110,32 +92,8 @@ bool UFF_PDFiumBPLibrary::PDFium_File_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
 		return false;
 	}
 
-	Global_Docs_Pool.Remove(In_PDF->Document);
 	FPDF_CloseDocument(In_PDF->Document);
 	In_PDF = nullptr;
-
-	return true;
-}
-
-bool UFF_PDFiumBPLibrary::PDFium_Close_All_Docs()
-{
-	if (Global_IsPDFiumInitialized == false)
-	{
-		return false;
-	}
-
-	TArray<FPDF_DOCUMENT> Array_Docs = Global_Docs_Pool.Array();
-	for (int32 Index_Docs = 0; Index_Docs < Array_Docs.Num(); Index_Docs++)
-	{
-		if (Array_Docs[Index_Docs])
-		{
-			FPDF_CloseDocument(Array_Docs[Index_Docs]);
-			Array_Docs[Index_Docs] = nullptr;
-		}
-	}
-
-	Array_Docs.Empty();
-	Global_Docs_Pool.Empty();
 
 	return true;
 }
@@ -167,8 +125,6 @@ bool UFF_PDFiumBPLibrary::PDFium_File_Open(UPDFiumDoc*& Out_PDF, FString& ErrorC
 		ErrorCode = "PDF is invalid.";
 		return false;
 	}
-
-	Global_Docs_Pool.Add(PDF_Object->Document);
 	
 	Out_PDF = PDF_Object;
 
@@ -176,37 +132,7 @@ bool UFF_PDFiumBPLibrary::PDFium_File_Open(UPDFiumDoc*& Out_PDF, FString& ErrorC
 	return true;
 }
 
-// TODO: FPDF_RenderPageBitmapWithMatrix() can't render contents ! I think it is a bug.
-void RenderWithMatrixCallback(FVector2D Size, FPDF_PAGE Page, FPDF_BITMAP Bitmap)
-{
-	FS_RECTF Rectangle;
-	FMemory::Memset(&Rectangle, 0, sizeof(Rectangle));
-	Rectangle.left = 0;
-	Rectangle.right = Size.X - 1;
-
-	Rectangle.top = 0;
-	Rectangle.bottom = Size.Y - 1;
-
-	FS_MATRIX Transform;
-	FMemory::Memset(&Transform, 0, sizeof(Transform));
-
-	Transform.a = Size.X;
-	Transform.b = 0;
-	Transform.c = 0;
-	Transform.d = Size.Y;
-	Transform.e = 0;
-	Transform.f = 0;
-
-	ENQUEUE_RENDER_COMMAND(UpdateTextureRegionsData)([&Bitmap, Page, &Transform, &Rectangle](FRHICommandListImmediate& CommandList)
-		{
-			FPDF_RenderPageBitmapWithMatrix(Bitmap, Page, &Transform, &Rectangle, FPDF_ANNOT);
-		}
-	);
-
-	FlushRenderingCommands();
-}
-
-bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling, FColor BG_Color, bool bUseSrgb)
+bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling, FColor BG_Color, bool bUseSrgb, bool bUseMatrix, bool bUseAlpha, bool bRenderAnnots)
 {	
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -237,18 +163,48 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pag
 	for (int32 Index_Pages = 0; Index_Pages < FPDF_GetPageCount(In_PDF->Document); Index_Pages++)
 	{		
 		FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, Index_Pages);
-		double PDF_Page_Width = FPDF_GetPageWidth(PDF_Page);
-		double PDF_Page_Height = FPDF_GetPageHeight(PDF_Page);
-		int32 Render_Width = PDF_Page_Width * Sampling;
-		int32 Render_Height = PDF_Page_Height * Sampling;
-		size_t Lenght = static_cast<SIZE_T>(Render_Width * Render_Height * 4);
+		
+		const double PDF_Page_Width = FPDF_GetPageWidth(PDF_Page);
+		const double PDF_Page_Height = FPDF_GetPageHeight(PDF_Page);
+		const int32 Render_Width = PDF_Page_Width * Sampling;
+		const int32 Render_Height = PDF_Page_Height * Sampling;
+		const size_t Lenght = static_cast<SIZE_T>(Render_Width * Render_Height * 4);
 
-		FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Render_Width, Render_Height, FPDFBitmap_BGRx, NULL, 0);
+		FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Render_Width, Render_Height, (bUseAlpha ? FPDFBitmap_BGRA : FPDFBitmap_BGRx), NULL, 0);
 		FPDFBitmap_FillRect(PDF_Bitmap, 0, 0, Render_Width, Render_Height, BG_Color.ToPackedARGB());
+		
 		FPDF_FORMHANDLE Form_Handle;
 		FMemory::Memset(&Form_Handle, 0, sizeof(Form_Handle));
 		FPDF_FFLDraw(Form_Handle, PDF_Bitmap, PDF_Page, 0, 0, Render_Width, Render_Height, 0, 0);
-		FPDF_RenderPageBitmap(PDF_Bitmap, PDF_Page, 0, 0, Render_Width, Render_Height, 0, FPDF_ANNOT);
+
+		if (bUseMatrix)
+		{
+			const FS_MATRIX Matrix = 
+			{
+				static_cast<float>(Render_Width),
+				0,
+				0,
+				static_cast<float>(Render_Height),
+				0,
+				static_cast<float>(Render_Height)
+			};
+			
+			const FS_RECTF Rect = 
+			{
+				0,
+				0,
+				static_cast<float>(Render_Width),
+				static_cast<float>(Render_Height)
+			};
+
+			FPDF_RenderPageBitmapWithMatrix(PDF_Bitmap, PDF_Page, &Matrix, &Rect, (bRenderAnnots ? FPDF_ANNOT : FPDF_LCD_TEXT));
+		}
+
+		else
+		{
+			FPDF_RenderPageBitmap(PDF_Bitmap, PDF_Page, 0, 0, Render_Width, Render_Height, 0, (bRenderAnnots ? FPDF_ANNOT : FPDF_LCD_TEXT));
+		}
+
 		void* Buffer = FPDFBitmap_GetBuffer(PDF_Bitmap);
 		
 		UTexture2D* PDF_Texture = UTexture2D::CreateTransient(Render_Width, Render_Height, PF_B8G8R8A8);
@@ -602,12 +558,10 @@ bool UFF_PDFiumBPLibrary::PDFium_Create_Doc(UPDFiumDoc*& Out_PDF)
 
 	Out_PDF = PDF_Object;
 
-	Global_Docs_Pool.Add(PDF_Object->Document);
-
 	return true;
 }
 
-bool UFF_PDFiumBPLibrary::PDFium_Add_Pages(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<FVector2D> Pages)
+bool UFF_PDFiumBPLibrary::PDFium_Pages_Add(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<FVector2D> Pages)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -633,6 +587,35 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Pages(UPARAM(ref)UPDFiumDoc*& In_PDF, TArra
 		
 		FPDF_ClosePage(PDF_Page);
 	}
+
+	return true;
+}
+
+bool UFF_PDFiumBPLibrary::PDFium_Pages_Delete(UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex)
+{
+	if (Global_IsPDFiumInitialized == false)
+	{
+		return false;
+	}
+
+	if (IsValid(In_PDF) == false)
+	{
+		return false;
+	}
+
+	if (!In_PDF->Document)
+	{
+		return false;
+	}
+	
+	FPDF_PAGE TargetPage = FPDF_LoadPage(In_PDF->Document, PageIndex);
+	if (!TargetPage)
+	{
+		return false;
+	}
+	
+	FPDF_ClosePage(TargetPage);
+	FPDFPage_Delete(In_PDF->Document, PageIndex);
 
 	return true;
 }

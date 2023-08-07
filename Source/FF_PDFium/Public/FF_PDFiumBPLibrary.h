@@ -50,7 +50,7 @@ public:
 	FString Font_Name = "";
 
 	UPROPERTY(BlueprintReadOnly)
-	URuntimeFont* Runtime_Font;
+	URuntimeFont* Runtime_Font = nullptr;
 
 	UPROPERTY(BlueprintReadOnly)
 	float Font_Size = 0;
@@ -73,7 +73,7 @@ class FF_PDFIUM_API UPDFiumDoc : public UObject
 
 public:
 	
-	FPDF_DOCUMENT Document;
+	FPDF_DOCUMENT Document = NULL;
 };
 
 UCLASS(BlueprintType)
@@ -83,7 +83,7 @@ class FF_PDFIUM_API UPDFiumFont : public UObject
 
 public:
 
-	FPDF_FONT Font;
+	FPDF_FONT Font = NULL;
 };
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -106,9 +106,6 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Close File", ToolTip = "", Keywords = "pdfium, pdf, read, close"), Category = "PDFium|System")
 	static bool PDFium_File_Close(UPARAM(ref)UPDFiumDoc*& In_PDF);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Close All Documents", ToolTip = "", Keywords = "pdfium, pdf, read, close, all, documents"), Category = "PDFium|System")
-	static bool PDFium_Close_All_Docs();
-
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open File", ToolTip = "", Keywords = "pdfium, pdf, read, open"), Category = "PDFium|Read")
 	static bool PDFium_File_Open(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password);
 
@@ -117,7 +114,7 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	* @param Out_Bytes It creates bytes from "FPDF_BITMAP" buffer but don't have Bitmap headers. Don't use it with other than "PDFium_Bytes_To_T2D". If you need real bitmaps, use "ExtendedVars -> ExportT2dAsBitmap"
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Get Pages", Keywords = "pdfium, pdf, read, get, pages"), Category = "PDFium|Read")
-	static bool PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling = 1, FColor BG_Color = FColor::White, bool bUseSrgb = true);
+	static bool PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling = 1, FColor BG_Color = FColor::White, bool bUseSrgb = true, bool bUseMatrix = false, bool bUseAlpha = true, bool bRenderAnnots = true);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Get Images", Keywords = "pdfium, pdf, read, get, images"), Category = "PDFium|Read")
 	static bool PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb = true);
@@ -144,7 +141,10 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	* @param Pages It will add pages as same amount of the length of the array to the document. Each page size will be equal to respective indexed Vector 2D
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Add Pages", Keywords = "pdfium, pdf, create, doc, document, pdf, add, pages"), Category = "PDFium|Write")
-	static bool PDFium_Add_Pages(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<FVector2D> Pages);
+	static bool PDFium_Pages_Add(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<FVector2D> Pages);
+
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Delete Pages", Keywords = "pdfium, pdf, doc, document, pdf, delete, pages"), Category = "PDFium|Write")
+	static bool PDFium_Pages_Delete(UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex = 0);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Load Standart Font", ToolTip = "These are 14 standart font which described on PDF Specs 1.7 page 416.\nPDFium (or PDF Specs 1.7) uses same library for both Arial and Helvetica. So, if there are problems with their visualizations or language supports, it is library's owner's responsibility.\n\nZapfDingbats and Symbol really convert your texts into some kind of drawings. It's not an error or language problem, it is what it is.\nActually kawaii btw.", Keywords = "pdfium, pdf, load, font, standart"), Category = "PDFium|Write")
 	static bool PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, UPARAM(ref)UPDFiumDoc*& In_PDF, EStandartFonts Font_Name = EStandartFonts::Helvetica);
