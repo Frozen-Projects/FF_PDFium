@@ -179,18 +179,18 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pag
 		{
 			FS_MATRIX Image_Matrix
 			{ 
-				static_cast<float>(Render_Width),
-				static_cast<float>(0),
-				static_cast<float>(0),
-				static_cast<float>(Render_Height), 
-				static_cast<float>(0),
-				static_cast<float>(0)
+				static_cast<float>(Sampling),
+				0.f,
+				0.f,
+				static_cast<float>(Sampling),
+				0.f,
+				0.f
 			};
 			
 			FS_RECTF Rect
 			{ 
-				static_cast<float>(0),
-				static_cast<float>(0),
+				0.f,
+				0.f,
 				static_cast<float>(Render_Width), 
 				static_cast<float>(Render_Height) 
 			};
