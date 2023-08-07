@@ -74,6 +74,7 @@ class FF_PDFIUM_API UPDFiumDoc : public UObject
 public:
 	
 	FPDF_DOCUMENT Document = NULL;
+
 };
 
 UCLASS(BlueprintType)
@@ -84,6 +85,7 @@ class FF_PDFIUM_API UPDFiumFont : public UObject
 public:
 
 	FPDF_FONT Font = NULL;
+
 };
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -111,7 +113,8 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 
 	/**
 	* @param In_Sampling Default (also minimum) value is "1" but "2" gives best result for A4 sized PDF on 17 inch notebook screen. Bigger values is good for 3D widget like huge UIs.
-	* @param Out_Bytes It creates bytes from "FPDF_BITMAP" buffer but don't have Bitmap headers. Don't use it with other than "PDFium_Bytes_To_T2D". If you need real bitmaps, use "ExtendedVars -> ExportT2dAsBitmap"
+	* @param Out_Pages Created textures don't have BITMAP headers. So, they don't work with other technologies. If you need real bitmaps, export UTexture2Ds with "ExtendedVars -> ExportT2dAsBitmap"
+	* @param bUseMatrix Don't use this boolean. Currently it is exprimental and doesn't work.
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Get Pages", Keywords = "pdfium, pdf, read, get, pages"), Category = "PDFium|Read")
 	static bool PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling = 1, FColor BG_Color = FColor::White, bool bUseSrgb = true, bool bUseMatrix = false, bool bUseAlpha = true, bool bRenderAnnots = true);
@@ -138,7 +141,7 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	static bool PDFium_Create_Doc(UPDFiumDoc*& Out_PDF);
 
 	/*
-	* @param Pages It will add pages as same amount of the length of the array to the document. Each page size will be equal to respective indexed Vector 2D
+	* @param Pages It will add pages to the document as length of the array. Each page's size will be equal to respective indexed Vector 2D
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Add Pages", Keywords = "pdfium, pdf, create, doc, document, pdf, add, pages"), Category = "PDFium|Write")
 	static bool PDFium_Pages_Add(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<FVector2D> Pages);

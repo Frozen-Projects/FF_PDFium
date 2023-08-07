@@ -177,9 +177,25 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pag
 		
 		if (bUseMatrix)
 		{
-			const FS_MATRIX Matrix = { static_cast<float>(Render_Width), 0, 0, static_cast<float>(Render_Height), 0, 0 };
-			const FS_RECTF Rect = { 0, 0, static_cast<float>(Render_Width), static_cast<float>(Render_Height) };
-			FPDF_RenderPageBitmapWithMatrix(PDF_Bitmap, PDF_Page, &Matrix, &Rect, (bRenderAnnots ? FPDF_ANNOT : FPDF_LCD_TEXT));
+			FS_MATRIX Image_Matrix
+			{ 
+				static_cast<float>(Render_Width),
+				static_cast<float>(0),
+				static_cast<float>(0),
+				static_cast<float>(Render_Height), 
+				static_cast<float>(0),
+				static_cast<float>(0)
+			};
+			
+			FS_RECTF Rect
+			{ 
+				static_cast<float>(0),
+				static_cast<float>(0),
+				static_cast<float>(Render_Width), 
+				static_cast<float>(Render_Height) 
+			};
+			
+			FPDF_RenderPageBitmapWithMatrix(PDF_Bitmap, PDF_Page, &Image_Matrix, &Rect, (bRenderAnnots ? FPDF_ANNOT : FPDF_LCD_TEXT));
 		}
 
 		else
