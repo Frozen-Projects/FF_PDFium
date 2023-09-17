@@ -73,7 +73,7 @@ bool UFF_PDFiumBPLibrary::PDFium_LibState()
 	return Global_IsPDFiumInitialized;
 }
 
-bool UFF_PDFiumBPLibrary::PDFium_File_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
+bool UFF_PDFiumBPLibrary::PDFium_Doc_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -96,7 +96,41 @@ bool UFF_PDFiumBPLibrary::PDFium_File_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
 	return true;
 }
 
-bool UFF_PDFiumBPLibrary::PDFium_File_Open(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password)
+bool UFF_PDFiumBPLibrary::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password)
+{
+	if (In_Path.IsEmpty())
+	{
+		ErrorCode = "Path is empty.";
+		return false;
+	}
+	FPaths::NormalizeFilename(In_Path);
+	FString Path = FPlatformFileManager::Get().GetPlatformFile().ConvertToAbsolutePathForExternalAppForRead(*In_Path);
+
+	if (!FPaths::FileExists(Path))
+	{
+		ErrorCode = "There is no file to open.";
+		return false;
+	}
+
+	FPaths::MakePlatformFilename(Path);
+
+	UPDFiumDoc* PDF_Object = NewObject<UPDFiumDoc>();
+	PDF_Object->Document = FPDF_LoadDocument(TCHAR_TO_UTF8(*Path), TCHAR_TO_UTF8(*In_PDF_Password));
+	FPDF_LoadXFA(PDF_Object->Document);
+
+	if (!PDF_Object->Document)
+	{
+		ErrorCode = "PDF is invalid.";
+		return false;
+	}
+
+	Out_PDF = PDF_Object;
+
+	ErrorCode = "Success.";
+	return true;
+}
+
+bool UFF_PDFiumBPLibrary::PDFium_Doc_Open_Memory(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password)
 {
 	if (IsValid(In_Bytes_Object) == false)
 	{
@@ -722,14 +756,14 @@ bool UFF_PDFiumBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPAR
 		return false;
 	}
 
-	FPaths::MakeStandardFilename(Font_Path);
-	if (FPaths::FileExists(Font_Path) == false)
+	FString Path = FPlatformFileManager::Get().GetPlatformFile().ConvertToAbsolutePathForExternalAppForRead(*Font_Path);
+	if (FPaths::FileExists(Path) == false)
 	{
 		return false;
 	}
 
 	TArray<uint8> ByteArray;
-	FFileHelper::LoadFileToArray(ByteArray, *Font_Path);
+	FFileHelper::LoadFileToArray(ByteArray, *Path);
 
 	int FontType = 0;
 	switch (In_Font_Type)
