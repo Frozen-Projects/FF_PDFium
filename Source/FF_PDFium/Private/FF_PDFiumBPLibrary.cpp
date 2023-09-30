@@ -441,7 +441,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, UP
 			TArray<uint8> Font_Bytes;
 			Font_Bytes.SetNum(Bufflen);
 			FPDFFont_GetFontData(Font_Object, Font_Bytes.GetData(), Bufflen, &Bufflen);
-			Text_Object.Runtime_Font = UExtendedVarsBPLibrary::RuntimeFont_Load(Font_Bytes);
+			Text_Object.Runtime_Font = UExtendedVarsBPLibrary::Runtime_Font_Load(Font_Bytes);
 			
 			// Font Flag, Font Italic and Width
 			Text_Object.Font_Flags = FPDFFont_GetFlags(Font_Object);
