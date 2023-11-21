@@ -172,6 +172,6 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	static FF_PDFIUM_API bool PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, FVector2D Position, FVector2D Anchor, FVector2D Size, FVector2D Rotation, FColor Color = FColor::Blue, int32 PageIndex = 0);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Add Image", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, add, draw, image"), Category = "PDF_Reader|PDFium|Write")
-	static FF_PDFIUM_API bool PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UObject* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex = 0);
+	static FF_PDFIUM_API bool PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex = 0);
 
 };

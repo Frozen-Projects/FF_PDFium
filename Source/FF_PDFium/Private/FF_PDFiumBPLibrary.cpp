@@ -1028,96 +1028,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, 
 	return true;
 }
 
-bool PDF_Image_Callback(UObject* Target_Image, FPDF_PAGEOBJECT Image_Object, FVector2D& Out_Size)
-{
-	UTexture2D* Texture2D = Cast<UTexture2D>(Target_Image);
-	TArray64<uint8_t> Bytes;
-
-	if (Texture2D)
-	{
-		Out_Size = FVector2D(Texture2D->GetSizeX(), Texture2D->GetSizeY());
-
-#if WITH_EDITOR
-
-		FImage Image;
-		FImageUtils::GetTexture2DSourceImage(Texture2D, Image);
-
-		Bytes.SetNum(Image.RawData.Num());
-		FMemory::Memcpy(Bytes.GetData(), Image.RawData.GetData(), Image.RawData.Num());
-
-#else
-
-		if (Texture2D->GetPixelFormat() == EPixelFormat::PF_B8G8R8A8 && Texture2D->CompressionSettings.GetIntValue() == 5 || Texture2D->CompressionSettings.GetIntValue() == 7)
-		{
-			FTexture2DMipMap& Texture_Mip = Texture2D->GetPlatformData()->Mips[0];
-			void* Texture_Data = Texture_Mip.BulkData.Lock(LOCK_READ_WRITE);
-
-			int64 BufferSize = Out_Size.X * Out_Size.Y * 4;
-			if (BufferSize > Texture_Mip.BulkData.GetBulkDataSize())
-			{
-				UE_LOG(LogTemp, Display, TEXT("PDFium PDF : Texture settings are not compatible."))
-
-				Texture_Mip.BulkData.Unlock();
-
-				return NULL;
-			}
-
-			Bytes.SetNum(BufferSize);
-			FMemory::Memcpy(Bytes.GetData(), (uint8_t*)Texture_Data, BufferSize);
-
-			Texture_Mip.BulkData.Unlock();
-
-			UE_LOG(LogTemp, Display, TEXT("PDFium PDF : Texture2D image insertion from runtime."))
-		}
-
-		else
-		{
-			UE_LOG(LogTemp, Display, TEXT("PDFium PDF : Texture settings are not compatible."))
-
-			return NULL;
-		}
-
-#endif // WITH_EDITOR
-	}
-
-	UTextureRenderTarget2D* TRT2D = Cast<UTextureRenderTarget2D>(Target_Image);
-
-	if (TRT2D)
-	{
-		Out_Size = FVector2D(TRT2D->SizeX, TRT2D->SizeY);
-		FImageUtils::GetRawData(TRT2D, Bytes);
-
-		UE_LOG(LogTemp, Display, TEXT("PDFium PDF : TextureRenderTarget2D image insertion."))
-	}
-
-	if (!Texture2D && !TRT2D)
-	{
-		UE_LOG(LogTemp, Display, TEXT("PDFium PDF : There is no image to read."))
-
-		return false;
-	}
-
-	// Stride Function.
-	int32 BytesPerPixel = 4;
-	int32 Width_Bytes = Out_Size.X * BytesPerPixel;
-	int32 Padding = (BytesPerPixel - (Width_Bytes) % BytesPerPixel) % BytesPerPixel;
-	int32 Stride = (Width_Bytes)+Padding;
-
-	FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(Out_Size.X, Out_Size.Y, FPDFBitmap_BGRA, Bytes.GetData(), Stride);
-	FPDF_BOOL Result = FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
-
-	if (Result == 1)
-	{
-		return true;
-	}
-
-	else
-	{
-		return false;
-	}
-}
-
-bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UObject* In_Texture, FVector2D Position, FVector2D Rotation, int32 PageIndex)
+bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -1134,7 +1045,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UObje
 		return false;
 	}
 
-	if (IsValid(In_Texture) == false)
+	if (In_Bytes.Num() == 0 || In_Size.X == 0 || In_Size.Y == 0)
 	{
 		return false;
 	}
@@ -1142,35 +1053,51 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, UObje
 	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 	FPDF_PAGEOBJECT Image_Object = FPDFPageObj_NewImageObj(In_PDF->Document);
 
-	FVector2D Size;
-	if (!PDF_Image_Callback(In_Texture, Image_Object, Size))
+	// Stride Function.
+	int32 BytesPerPixel = 4;
+	int32 Width_Bytes = In_Size.X * BytesPerPixel;
+	int32 Padding = (BytesPerPixel - (Width_Bytes) % BytesPerPixel) % BytesPerPixel;
+	int32 Stride = (Width_Bytes)+Padding;
+
+	FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(In_Size.X, In_Size.Y, FPDFBitmap_BGRA, In_Bytes.GetData(), Stride);
+
+	FPDF_BOOL Result = FPDF_ERR_SUCCESS;
+
+	Result = FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
+
+	if (Result != 1)
 	{
+		FPDF_ClosePage(PDF_Page);
 		return false;
 	}
 
 	FS_MATRIX Image_Matrix
 	{
-		static_cast<float>(Size.X),
+		static_cast<float>(In_Size.X),
 		static_cast<float>(Rotation.X),
 		static_cast<float>(Rotation.Y),
-		static_cast<float>(Size.Y),
+		static_cast<float>(In_Size.Y),
 		static_cast<float>(Position.X),
 		static_cast<float>(Position.Y),
 	};
 
-	FPDF_BOOL Result = FPDF_ERR_SUCCESS;
 	Result = FPDFPageObj_SetMatrix(Image_Object, &Image_Matrix);
-	FPDFPage_InsertObject(PDF_Page, Image_Object);
-	Result = FPDFPage_GenerateContent(PDF_Page);
-	FPDF_ClosePage(PDF_Page);
-
-	if (Result == 1)
+	if (Result != 1)
 	{
-		return true;
-	}
-
-	else
-	{
+		FPDF_ClosePage(PDF_Page);
 		return false;
 	}
+
+	FPDFPage_InsertObject(PDF_Page, Image_Object);
+	
+	Result = FPDFPage_GenerateContent(PDF_Page);
+	if (Result != 1)
+	{
+		FPDF_ClosePage(PDF_Page);
+		return false;
+	}
+	
+	FPDF_ClosePage(PDF_Page);
+	
+	return true;
 }
