@@ -14,6 +14,7 @@ THIRD_PARTY_INCLUDES_START
 #include <Windows/AllowWindowsPlatformTypes.h>
 #include "fpdfview.h"
 #include <Windows/HideWindowsPlatformTypes.h>
+#include "fpdf_edit.h"
 THIRD_PARTY_INCLUDES_END
 #endif
 
@@ -96,7 +97,7 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Library Init", Keywords = "pdfium, pdf, document, library, lib, open"), Category = "PDFium|System")
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Library Init", Keywords = "pdfium, pdf, document, library, lib, open, init"), Category = "PDFium|System")
 	static FF_PDFIUM_API bool PDFium_LibInit(FString& Out_Code);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Library Close", Keywords = "pdfium, pdf, document, library, lib, close"), Category = "PDFium|System")
@@ -172,6 +173,6 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	static FF_PDFIUM_API bool PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, FVector2D Position, FVector2D Anchor, FVector2D Size, FVector2D Rotation, FColor Color = FColor::Blue, int32 PageIndex = 0);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Add Image", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, add, draw, image"), Category = "PDF_Reader|PDFium|Write")
-	static FF_PDFIUM_API bool PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex = 0);
+	static FF_PDFIUM_API bool PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FString& Out_Code, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex = 0);
 
 };

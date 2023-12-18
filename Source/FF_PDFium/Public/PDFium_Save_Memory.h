@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
+// Custom Includes.
 #include "FF_PDFiumBPLibrary.h"
 
 #include "PDFium_Save_Memory.generated.h"
@@ -25,6 +26,7 @@ public:
 	virtual bool PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, UPARAM(ref)UPDFiumDoc*& In_PDF);
 
 protected:
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 

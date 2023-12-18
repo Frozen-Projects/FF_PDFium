@@ -14,7 +14,6 @@
 THIRD_PARTY_INCLUDES_START
 // PDFium Includes.
 #include "fpdf_text.h"
-#include "fpdf_edit.h"
 #include "fpdf_formfill.h"
 THIRD_PARTY_INCLUDES_END
 
@@ -1028,7 +1027,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, 
 	return true;
 }
 
-bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex)
+bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FString& Out_Code, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex)
 {
 	if (Global_IsPDFiumInitialized == false)
 	{
@@ -1047,26 +1046,76 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, TArra
 
 	if (In_Bytes.Num() == 0 || In_Size.X == 0 || In_Size.Y == 0)
 	{
+		Out_Code = "Bytes and size shouldn't be zero.";
+		return false;
+	}
+
+	// If byte array is PNG, first 8 bytes will be "89504e470d0a1a0a" and PDFium doesn't support it.
+	if (UExtendedVarsBPLibrary::Bytes_x86_To_Hex(In_Bytes, 0, 7, false) == "89504e470d0a1a0a")
+	{
+		Out_Code = "PDFium doesn't support PNG files. Please use JPEG/JPG or raw buffer.";
+		return false;
+	}
+
+	// If byte array is BMP, first two bytes will be "424d" and PDFium doesn't support it.
+	if (UExtendedVarsBPLibrary::Bytes_x86_To_Hex(In_Bytes, 0, 7, false) == "424d")
+	{
+		Out_Code = "PDFium doesn't support BMP files. Please use JPEG/JPG or raw buffer.";
 		return false;
 	}
 
 	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 	FPDF_PAGEOBJECT Image_Object = FPDFPageObj_NewImageObj(In_PDF->Document);
 
-	// Stride Function.
-	int32 BytesPerPixel = 4;
-	int32 Width_Bytes = In_Size.X * BytesPerPixel;
-	int32 Padding = (BytesPerPixel - (Width_Bytes) % BytesPerPixel) % BytesPerPixel;
-	int32 Stride = (Width_Bytes)+Padding;
+	FPDF_BOOL Result = false;
+	FString ImageType = "";
 
-	FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(In_Size.X, In_Size.Y, FPDFBitmap_BGRA, In_Bytes.GetData(), Stride);
+	// If byte array is JPG/JPEG, first two bytes will be "ffd8" and last two bytes will be "ffd9"
+	if (UExtendedVarsBPLibrary::Bytes_x86_To_Hex(In_Bytes, 0, 1, false) == "ffd8" && UExtendedVarsBPLibrary::Bytes_x86_To_Hex(In_Bytes, (In_Bytes.Num() - 2), (In_Bytes.Num() - 1), false) == "ffd9")
+	{
+		auto Callback_Jpeg = [](void* CallbackContext, unsigned long position, unsigned char* ImportBuffer, unsigned long size)-> int
+			{
+				if (!CallbackContext)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Texture Buffer is not valid !"));
+					return 0;
+				}
+				
+				FMemory::Memcpy(ImportBuffer, static_cast<uint8*>(CallbackContext) + position, size);
+				return 1;
+			};
 
-	FPDF_BOOL Result = FPDF_ERR_SUCCESS;
+		FPDF_FILEACCESS Jpeg_Access;
+		memset(&Jpeg_Access, 0, sizeof(Jpeg_Access));
+		Jpeg_Access.m_FileLen = In_Bytes.Num();
+		Jpeg_Access.m_Param = In_Bytes.GetData();
+		Jpeg_Access.m_GetBlock = Callback_Jpeg;
+	
+		Result = FPDFImageObj_LoadJpegFileInline(&PDF_Page, 1, Image_Object, &Jpeg_Access);
+		
+		ImageType = "\"Jpeg\"";
+	}
 
-	Result = FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
+	// Raw image
+	else
+	{
+		// Stride Function.
+		const int32 BytesPerPixel = sizeof(FColor);
+		const int32 Width_Bytes = In_Size.X * BytesPerPixel;
+		const int32 Padding = (BytesPerPixel - (Width_Bytes) % BytesPerPixel) % BytesPerPixel;
+		const int32 Stride = (Width_Bytes)+Padding;
+
+		FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(In_Size.X, In_Size.Y, FPDFBitmap_BGRA, In_Bytes.GetData(), Stride);
+
+		Result = FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
+		
+		ImageType = "\"Raw buffer\"";
+	}
 
 	if (Result != 1)
 	{
+		Out_Code = "Image add is not successful.";
+		
 		FPDF_ClosePage(PDF_Page);
 		return false;
 	}
@@ -1084,6 +1133,8 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, TArra
 	Result = FPDFPageObj_SetMatrix(Image_Object, &Image_Matrix);
 	if (Result != 1)
 	{
+		Out_Code = "Image matrix definition is not successful.";
+
 		FPDF_ClosePage(PDF_Page);
 		return false;
 	}
@@ -1093,11 +1144,14 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, TArra
 	Result = FPDFPage_GenerateContent(PDF_Page);
 	if (Result != 1)
 	{
+		Out_Code = "PDF content update is not successful.";
+
 		FPDF_ClosePage(PDF_Page);
 		return false;
 	}
-	
+
+	Out_Code = "Image insert as " + ImageType + " is successful.";
+
 	FPDF_ClosePage(PDF_Page);
-	
 	return true;
 }

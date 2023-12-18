@@ -4,7 +4,6 @@
 
 THIRD_PARTY_INCLUDES_START
 #include "fpdf_save.h"
-#include "fpdf_edit.h"
 THIRD_PARTY_INCLUDES_END
 
 // Global bytes object for PDF file.

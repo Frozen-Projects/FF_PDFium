@@ -2,11 +2,11 @@
 
 #include "PDFium_Save_File.h"
 
+// UE Includes.
 #include "Misc/FileHelper.h"
 
 THIRD_PARTY_INCLUDES_START
 #include "fpdf_save.h"
-#include "fpdf_edit.h"
 THIRD_PARTY_INCLUDES_END
 
 // Global bytes array for saving PDF files.
@@ -72,7 +72,6 @@ bool APDFium_Save_File::PDFium_Save_File(UPARAM(ref)UPDFiumDoc*& In_PDF, FString
 
 	FPDF_FILEWRITE Writer;
 	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
-
 	Writer.version = 1;
 	Writer.WriteBlock = Callback_File;
 
