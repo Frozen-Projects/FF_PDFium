@@ -1044,9 +1044,15 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FStri
 		return false;
 	}
 
-	if (In_Bytes.Num() == 0 || In_Size.X == 0 || In_Size.Y == 0)
+	if (In_Bytes.IsEmpty())
 	{
-		Out_Code = "Bytes and size shouldn't be zero.";
+		Out_Code = "Bytes' size shouldn't be zero.";
+		return false;
+	}
+
+	if (In_Size.X == 0 || In_Size.Y == 0)
+	{
+		Out_Code = "Image's size components shouldn't be zero.";
 		return false;
 	}
 
@@ -1058,7 +1064,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FStri
 	}
 
 	// If byte array is BMP, first two bytes will be "424d" and PDFium doesn't support it.
-	if (UExtendedVarsBPLibrary::Bytes_x86_To_Hex(In_Bytes, 0, 7, false) == "424d")
+	else if (UExtendedVarsBPLibrary::Bytes_x86_To_Hex(In_Bytes, 0, 1, false) == "424d")
 	{
 		Out_Code = "PDFium doesn't support BMP files. Please use JPEG/JPG or raw buffer.";
 		return false;
@@ -1105,6 +1111,15 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FStri
 		const int32 Padding = (BytesPerPixel - (Width_Bytes) % BytesPerPixel) % BytesPerPixel;
 		const int32 Stride = (Width_Bytes)+Padding;
 
+		if (In_Bytes.Num() != (In_Size.X * In_Size.Y * BytesPerPixel))
+		{
+			FPDFPageObj_Destroy(Image_Object);
+			FPDF_ClosePage(PDF_Page);
+			
+			Out_Code = "Unknown image buffer.";
+			return false;
+		}
+
 		FPDF_BITMAP PDF_Bitmap = FPDFBitmap_CreateEx(In_Size.X, In_Size.Y, FPDFBitmap_BGRA, In_Bytes.GetData(), Stride);
 
 		Result = FPDFImageObj_SetBitmap(NULL, 0, Image_Object, PDF_Bitmap);
@@ -1114,9 +1129,10 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FStri
 
 	if (Result != 1)
 	{
-		Out_Code = "Image add is not successful.";
-		
+		FPDFPageObj_Destroy(Image_Object);
 		FPDF_ClosePage(PDF_Page);
+		
+		Out_Code = "Image add is not successful.";
 		return false;
 	}
 
@@ -1133,9 +1149,10 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FStri
 	Result = FPDFPageObj_SetMatrix(Image_Object, &Image_Matrix);
 	if (Result != 1)
 	{
-		Out_Code = "Image matrix definition is not successful.";
-
+		FPDFPageObj_Destroy(Image_Object);
 		FPDF_ClosePage(PDF_Page);
+
+		Out_Code = "Image matrix definition is not successful.";
 		return false;
 	}
 
@@ -1144,9 +1161,10 @@ bool UFF_PDFiumBPLibrary::PDFium_Add_Image(UPARAM(ref)UPDFiumDoc*& In_PDF, FStri
 	Result = FPDFPage_GenerateContent(PDF_Page);
 	if (Result != 1)
 	{
-		Out_Code = "PDF content update is not successful.";
-
+		FPDFPageObj_Destroy(Image_Object);
 		FPDF_ClosePage(PDF_Page);
+
+		Out_Code = "PDF content update is not successful.";
 		return false;
 	}
 
