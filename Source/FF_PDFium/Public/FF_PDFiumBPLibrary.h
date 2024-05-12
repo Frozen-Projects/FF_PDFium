@@ -90,6 +90,9 @@ public:
 
 	FPDF_FONT Font = NULL;
 
+	// ~UPDFiumFont start.
+	void BeginDestroy();
+	// ~UPDFiumFont finish.
 };
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -158,9 +161,6 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Load External Font", ToolTip = "You have to use \"desktop fonts\" not \"web fonts\". For example, some Google Fonts (such as Google Variant of Roboto) don't work. You can download compatible fonts from here. https://all-free-download.com/font/ , https://www.fontspace.com/category/truetype , https://www.dafont.com/", Keywords = "pdfium, pdf, document, load, font, external, custom"), Category = "PDFium|Write")
 	static FF_PDFIUM_API bool PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPARAM(ref)UPDFiumDoc*& In_PDF, FString Font_Path, EExternalFonts In_Font_Type = EExternalFonts::TrueType, bool bIsCid = false);
-
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Close Font", ToolTip = "", Keywords = "pdfium, pdfium, document, close, font"), Category = "PDFium|Write")
-	static FF_PDFIUM_API bool PDFium_Close_Font(UPARAM(ref)UPDFiumFont*& In_Font);
 
 	/**
 	* @param Position X value starts from left, Y value starts from bottom.

@@ -776,21 +776,11 @@ bool UFF_PDFiumBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPAR
 	return true;
 }
 
-bool UFF_PDFiumBPLibrary::PDFium_Close_Font(UPARAM(ref)UPDFiumFont*& In_Font)
+void UPDFiumFont::BeginDestroy()
 {
-	if (Global_IsPDFiumInitialized == false)
-	{
-		return false;
-	}
+	FPDFFont_Close(this->Font);
 
-	if (IsValid(In_Font) == false)
-	{
-		return false;
-	}
-
-	FPDFFont_Close(In_Font->Font);
-
-	return true;
+	Super::BeginDestroy();
 }
 
 void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes)
