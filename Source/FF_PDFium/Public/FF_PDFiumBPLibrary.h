@@ -76,6 +76,9 @@ public:
 	
 	FPDF_DOCUMENT Document = NULL;
 
+	// ~UPDFiumDoc start.
+	void BeginDestroy();
+	// ~UPDFiumDoc finish.
 };
 
 UCLASS(BlueprintType)
@@ -105,9 +108,6 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "PDFium - Library State", ToolTip = "", Keywords = "pdfium, pdf, document, library, state, get, is, initialized"), Category = "PDFium|System")
 	static FF_PDFIUM_API bool PDFium_LibState();
-
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Close Document", ToolTip = "", Keywords = "pdfium, pdf, document, read, close, file"), Category = "PDFium|System")
-	static FF_PDFIUM_API bool PDFium_Doc_Close(UPARAM(ref)UPDFiumDoc*& In_PDF);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from File", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, file"), Category = "PDFium|Read")
 	static FF_PDFIUM_API bool PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password);

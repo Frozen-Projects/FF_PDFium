@@ -29,6 +29,16 @@ UFF_PDFiumBPLibrary::UFF_PDFiumBPLibrary(const FObjectInitializer& ObjectInitial
 	}
 }
 
+void UPDFiumDoc::BeginDestroy()
+{
+	if (this->Document)
+	{
+		FPDF_CloseDocument(this->Document);
+	}
+
+	Super::BeginDestroy();
+}
+
 bool UFF_PDFiumBPLibrary::PDFium_LibInit(FString& Out_Code)
 {
 	if (Global_IsPDFiumInitialized == true)
@@ -70,29 +80,6 @@ bool UFF_PDFiumBPLibrary::PDFium_LibClose(FString& Out_Code)
 bool UFF_PDFiumBPLibrary::PDFium_LibState()
 {
 	return Global_IsPDFiumInitialized;
-}
-
-bool UFF_PDFiumBPLibrary::PDFium_Doc_Close(UPARAM(ref)UPDFiumDoc*& In_PDF)
-{
-	if (Global_IsPDFiumInitialized == false)
-	{
-		return false;
-	}
-
-	if (IsValid(In_PDF) == false)
-	{
-		return false;
-	}
-
-	if (!In_PDF->Document)
-	{
-		return false;
-	}
-
-	FPDF_CloseDocument(In_PDF->Document);
-	In_PDF = nullptr;
-
-	return true;
 }
 
 bool UFF_PDFiumBPLibrary::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password)
