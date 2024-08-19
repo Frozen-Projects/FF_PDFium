@@ -411,9 +411,9 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, UP
 
 			// Font Name
 			FPDF_FONT Font_Object = FPDFTextObj_GetFont(Each_Object);
-			unsigned long Font_Name_Lenght = FPDFFont_GetFontName(Font_Object, NULL, 0);
+			unsigned long Font_Name_Lenght = FPDFFont_GetFamilyName(Font_Object, NULL, 0);
 			char* Font_Name = (char*)malloc(static_cast<size_t>(Font_Name_Lenght));
-			FPDFFont_GetFontName(Font_Object, Font_Name, Font_Name_Lenght);
+			FPDFFont_GetFamilyName(Font_Object, Font_Name, Font_Name_Lenght);
 			Text_Object.Font_Name.AppendChars(Font_Name, Font_Name_Lenght);
 
 			// Font Size
