@@ -1,10 +1,5 @@
 #pragma once
 
-/*
-*	PDFium Binaries
-*	https://github.com/bblanchon/pdfium-binaries/releases
-*/
-
 // External Plugin.
 #include "ExtendedVarsBPLibrary.h"
 
@@ -23,24 +18,18 @@
 #include "ImageUtils.h"  
 #include "Engine/TextureRenderTarget2D.h"
 
-#ifdef _WIN64
 THIRD_PARTY_INCLUDES_START
+// https://github.com/bblanchon/pdfium-binaries/releases
+#ifdef _WIN64
 #include <Windows/AllowWindowsPlatformTypes.h>
 #include "fpdfview.h"
 #include <Windows/HideWindowsPlatformTypes.h>
-#include "fpdf_edit.h"
-#include "fpdf_save.h"
-#include "fpdf_text.h"
-#include "fpdf_formfill.h"
-THIRD_PARTY_INCLUDES_END
+#else
+#include "fpdfview.h"
 #endif
 
-#ifdef __ANDROID__
-THIRD_PARTY_INCLUDES_START
-#include "fpdfview.h"
-#include "fpdf_save.h"
 #include "fpdf_edit.h"
+#include "fpdf_save.h"
 #include "fpdf_text.h"
 #include "fpdf_formfill.h"
 THIRD_PARTY_INCLUDES_END
-#endif
