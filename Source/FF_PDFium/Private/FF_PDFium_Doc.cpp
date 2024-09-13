@@ -1,7 +1,84 @@
 #include "FF_PDFium_Doc.h"
 #include "FF_PDFiumBPLibrary.h"
 
-TArray64<uint8> UPDFiumDoc::PDF_Bytes;
+#pragma region SAVE_SYSTEM
+
+TArray64<uint8> UPDFiumSave::PDF_Bytes;
+
+void UPDFiumSave::BeginDestroy()
+{
+	PDF_Bytes.Empty();
+	Super::BeginDestroy();
+}
+
+int UPDFiumSave::Callback_Writer(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)
+{
+	PDF_Bytes.Append(static_cast<const uint8*>(pData), size);
+	return size;
+}
+
+TArray64<uint8> UPDFiumSave::Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
+{
+	if (!In_Document)
+	{
+		return TArray64<uint8>();
+	}
+
+	PDF_Bytes.Empty();
+
+	FPDF_FILEWRITE Writer;
+	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
+	Writer.WriteBlock = UPDFiumSave::Callback_Writer;
+	Writer.version = 1;
+
+	int Flags = FPDF_INCREMENTAL;
+	switch (In_SaveType)
+	{
+		case EPDFiumSaveTypes::Incremental:
+			Flags = FPDF_INCREMENTAL;
+			break;
+
+		case EPDFiumSaveTypes::NoIncremental:
+			Flags = FPDF_NO_INCREMENTAL;
+			break;
+
+		case EPDFiumSaveTypes::RemoveSecurity:
+			Flags = FPDF_REMOVE_SECURITY;
+			break;
+
+		default:
+			Flags = FPDF_INCREMENTAL;
+			break;
+	}
+
+	int Version = 17;
+	switch (In_Version)
+	{
+		case EPDFiumSaveVersion::PDF_14:
+			Version = 14;
+			break;
+		case EPDFiumSaveVersion::PDF_15:
+			Version = 15;
+			break;
+		case EPDFiumSaveVersion::PDF_17:
+			Version = 17;
+			break;
+		default:
+			Version = 17;
+			break;
+	}
+
+	FPDF_BOOL RetVal = FPDF_SaveWithVersion(In_Document, &Writer, Flags, Version);
+
+	if (PDF_Bytes.IsEmpty() || RetVal != 1)
+	{
+		return TArray64<uint8>();
+	}
+
+	return PDF_Bytes;
+}
+
+#pragma endregion SAVE_SYSTEM
 
 void UPDFiumDoc::BeginDestroy()
 {
@@ -9,8 +86,6 @@ void UPDFiumDoc::BeginDestroy()
 	{
 		FPDF_CloseDocument(this->Document);
 	}
-
-	PDF_Bytes.Empty();
 
 	Super::BeginDestroy();
 }
@@ -973,12 +1048,6 @@ bool UPDFiumDoc::PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVe
 	return true;
 }
 
-int UPDFiumDoc::Callback_Writer(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)
-{
-	PDF_Bytes.Append(static_cast<const uint8*>(pData), size);
-	return size;
-}
-
 bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
 	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
@@ -996,66 +1065,24 @@ bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveT
 		return false;
 	}
 
-	// We need to clear byte array before executing new save.
-	PDF_Bytes.Empty();
+	UPDFiumSave* SaveFactory = NewObject<UPDFiumSave>();
+	TArray64<uint8> Buffer = SaveFactory->Callback_Save(this->Document, In_SaveType, In_Version);
 
-	FPDF_FILEWRITE Writer;
-	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
-	Writer.WriteBlock = UPDFiumDoc::Callback_Writer;
-	Writer.version = 1;
-
-	int Flags = FPDF_INCREMENTAL;
-	switch (In_SaveType)
+	if (Buffer.IsEmpty())
 	{
-		case EPDFiumSaveTypes::Incremental:
-			Flags = FPDF_INCREMENTAL;
-			break;
-
-		case EPDFiumSaveTypes::NoIncremental:
-			Flags = FPDF_NO_INCREMENTAL;
-			break;
-
-		case EPDFiumSaveTypes::RemoveSecurity:
-			Flags = FPDF_REMOVE_SECURITY;
-			break;
-
-		default:
-			Flags = FPDF_INCREMENTAL;
-			break;
-	}
-
-	int Version = 17;
-	switch (In_Version)
-	{
-		case EPDFiumSaveVersion::PDF_14:
-			Version = 14;
-			break;
-		case EPDFiumSaveVersion::PDF_15:
-			Version = 15;
-			break;
-		case EPDFiumSaveVersion::PDF_17:
-			Version = 17;
-			break;
-		default:
-			Version = 17;
-			break;
-	}
-
-	FPDF_BOOL RetVal = FPDF_SaveWithVersion(this->Document, &Writer, Flags, Version);
-
-	if (PDF_Bytes.Num() > 0 && RetVal == 1)
-	{
-		FFileHelper::SaveArrayToFile(PDF_Bytes, *Export_Path);
-
-		PDF_Bytes.Empty();
-		return true;
-	}
-
-	else
-	{
-		PDF_Bytes.Empty();
 		return false;
 	}
+
+	bool RetVal = false; 
+	RetVal = FFileHelper::SaveArrayToFile(Buffer, *Export_Path);
+
+	if (!RetVal)
+	{
+		return false;
+	}
+
+	RetVal = SaveFactory->ConditionalBeginDestroy();
+	return RetVal;
 }
 
 bool UPDFiumDoc::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
@@ -1070,66 +1097,18 @@ bool UPDFiumDoc::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes
 		return false;
 	}
 
-	// We need to clear byte array before executing new save.
-	PDF_Bytes.Empty();
-
-	FPDF_FILEWRITE Writer;
-	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
-	Writer.WriteBlock = UPDFiumDoc::Callback_Writer;
-	Writer.version = 1;
-
-	int Flags = FPDF_INCREMENTAL;
-	switch (In_SaveType)
+	UPDFiumSave* SaveFactory = NewObject<UPDFiumSave>();
+	TArray64<uint8> Buffer = SaveFactory->Callback_Save(this->Document, In_SaveType, In_Version);
+	
+	if (Buffer.IsEmpty())
 	{
-		case EPDFiumSaveTypes::Incremental:
-			Flags = FPDF_INCREMENTAL;
-			break;
-
-		case EPDFiumSaveTypes::NoIncremental:
-			Flags = FPDF_NO_INCREMENTAL;
-			break;
-
-		case EPDFiumSaveTypes::RemoveSecurity:
-			Flags = FPDF_REMOVE_SECURITY;
-			break;
-
-		default:
-			Flags = FPDF_INCREMENTAL;
-			break;
-	}
-
-	int Version = 17;
-	switch (In_Version)
-	{
-		case EPDFiumSaveVersion::PDF_14:
-			Version = 14;
-			break;
-		case EPDFiumSaveVersion::PDF_15:
-			Version = 15;
-			break;
-		case EPDFiumSaveVersion::PDF_17:
-			Version = 17;
-			break;
-		default:
-			Version = 17;
-			break;
-	}
-
-	FPDF_BOOL RetVal = FPDF_SaveWithVersion(this->Document, &Writer, Flags, Version);
-
-	if (PDF_Bytes.Num() > 0 && RetVal == 1)
-	{
-		UBytesObject_64* Temp_PDF = NewObject<UBytesObject_64>();
-		FMemory::Memcpy(Temp_PDF->ByteArray.GetData(), PDF_Bytes.GetData(), PDF_Bytes.Num());
-		Out_Bytes = Temp_PDF;
-
-		PDF_Bytes.Empty();
-		return true;
-	}
-
-	else
-	{
-		PDF_Bytes.Empty();
 		return false;
 	}
+
+	UBytesObject_64* Temp_PDF = NewObject<UBytesObject_64>();
+	FMemory::Memcpy(Temp_PDF->ByteArray.GetData(), Buffer.GetData(), Buffer.Num());
+	Out_Bytes = Temp_PDF;
+
+	bool RetVal = SaveFactory->ConditionalBeginDestroy();
+	return RetVal;
 }

@@ -46,15 +46,27 @@ public:
 
 };
 
+UCLASS()
+class FF_PDFIUM_API UPDFiumSave : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	// ~UPDFiumSave start.
+	void BeginDestroy();
+	// ~UPDFiumSave finish.
+
+	static TArray64<uint8> PDF_Bytes;
+	static int Callback_Writer(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size);
+	virtual TArray64<uint8> Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
+
+};
+
 UCLASS(BlueprintType)
 class FF_PDFIUM_API UPDFiumDoc : public UObject
 {
 	GENERATED_BODY()
-
-private:
-	
-	static TArray64<uint8> PDF_Bytes;
-	static int Callback_Writer(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size);
 
 public:
 
