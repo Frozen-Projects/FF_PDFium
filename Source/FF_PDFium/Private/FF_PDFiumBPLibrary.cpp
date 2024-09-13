@@ -15,6 +15,13 @@ UFF_PDFiumBPLibrary::UFF_PDFiumBPLibrary(const FObjectInitializer& ObjectInitial
 	}
 }
 
+void UPDFiumFont::BeginDestroy()
+{
+	FPDFFont_Close(this->Font);
+
+	Super::BeginDestroy();
+}
+
 void UPDFiumDoc::BeginDestroy()
 {
 	if (this->Document)
@@ -74,6 +81,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& Er
 		ErrorCode = "Path is empty.";
 		return false;
 	}
+
 	FPaths::NormalizeFilename(In_Path);
 	FString Path = FPlatformFileManager::Get().GetPlatformFile().ConvertToAbsolutePathForExternalAppForRead(*In_Path);
 
@@ -119,7 +127,6 @@ bool UFF_PDFiumBPLibrary::PDFium_Doc_Open_Memory(UPDFiumDoc*& Out_PDF, FString& 
 	size_t PDF_Data_Size = In_Bytes_Object->ByteArray.Num();
 
 	UPDFiumDoc* PDF_Object = NewObject<UPDFiumDoc>();
-
 	PDF_Object->Document = FPDF_LoadMemDocument64(PDF_Data, PDF_Data_Size, TCHAR_TO_UTF8(*In_PDF_Password));
 	FPDF_LoadXFA(PDF_Object->Document);
 
@@ -166,7 +173,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UT
 
 	for (int32 Index_Pages = 0; Index_Pages < FPDF_GetPageCount(In_PDF->Document); Index_Pages++)
 	{		
-		const FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, Index_Pages);
+		FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, Index_Pages);
 		
 		const double PDF_Page_Width = FPDF_GetPageWidth(PDF_Page);
 		const double PDF_Page_Height = FPDF_GetPageHeight(PDF_Page);
@@ -275,12 +282,12 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UT
 
 bool UFF_PDFiumBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb)
 {
-	if (Global_IsPDFiumInitialized == false)
+	if (!Global_IsPDFiumInitialized)
 	{
 		return false;
 	}
 
-	if (IsValid(In_PDF) == false)
+	if (!IsValid(In_PDF))
 	{
 		return false;
 	}
@@ -292,10 +299,12 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Im
 
 	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 
-	int ObjectCount = FPDFPage_CountObjects(PDF_Page);
+	const int ObjectCount = FPDFPage_CountObjects(PDF_Page);
+
 	for (int32 Index_Objects = 0; Index_Objects < ObjectCount; Index_Objects++)
 	{
 		FPDF_PAGEOBJECT Each_Object = FPDFPage_GetObject(PDF_Page, Index_Objects);
+
 		if (FPDFPageObj_GetType(Each_Object) == FPDF_PAGEOBJ_IMAGE)
 		{
 			float Left = 0;
@@ -310,7 +319,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Im
 			
 			if (!Each_Buffer)
 			{
-				return false;
+				continue;
 			}
 
 			size_t Each_Buffer_Lenght = static_cast<SIZE_T>(TextureSize.X * TextureSize.Y * 4);
@@ -368,6 +377,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_All_Texts(TArray<FString>& Out_Texts, UPARA
 		FPDFText_ClosePage(PDF_TextPage);
 		FPDF_ClosePage(PDF_Page);
 		free(CharBuffer);
+		CharBuffer = nullptr;
 	}
 
 	return true;
@@ -393,7 +403,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, UP
 	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 	FPDF_TEXTPAGE Text_Page = FPDFText_LoadPage(PDF_Page);
 
-	int ObjectCount = FPDFPage_CountObjects(PDF_Page);
+	const int ObjectCount = FPDFPage_CountObjects(PDF_Page);
 	for (int32 Index_Objects = 0; Index_Objects < ObjectCount; Index_Objects++)
 	{
 		FPDF_PAGEOBJECT Each_Object = FPDFPage_GetObject(PDF_Page, Index_Objects);
@@ -404,12 +414,15 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, UP
 			
 			// Text String
 			unsigned long Buffer_Lenght = FPDFTextObj_GetText(Each_Object, Text_Page, NULL, 0);
-			FPDF_WCHAR* Buffer = (unsigned short*)malloc(Buffer_Lenght);
-			FPDFTextObj_GetText(Each_Object, Text_Page, Buffer, Buffer_Lenght);
+			FPDF_WCHAR* CharBuffer = (unsigned short*)malloc(Buffer_Lenght);
+			FPDFTextObj_GetText(Each_Object, Text_Page, CharBuffer, Buffer_Lenght);
 
 			FString PageText;
-			PageText.AppendChars((WIDECHAR*)Buffer, ((Buffer_Lenght / 2) - 1));
+			PageText.AppendChars((WIDECHAR*)CharBuffer, ((Buffer_Lenght / 2) - 1));
 			Text_Object.Text_String = PageText;
+
+			free(CharBuffer);
+			CharBuffer = nullptr;
 
 			// Text Position
 			float Left = 0;
@@ -488,7 +501,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Links(TArray<FString>& Out_Links, UPARAM(re
 	FPDF_TEXTPAGE PDF_TextPage = FPDFText_LoadPage(PDF_Page);
 
 	FPDF_PAGELINK PDF_Links = FPDFLink_LoadWebLinks(PDF_TextPage);
-	int32 Links_Count = FPDFLink_CountWebLinks(PDF_Links);
+	const int32 Links_Count = FPDFLink_CountWebLinks(PDF_Links);
 
 	if (Links_Count == 0)
 	{
@@ -500,8 +513,8 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Links(TArray<FString>& Out_Links, UPARAM(re
 
 	for (int32 Index_Link = 0; Index_Link < Links_Count; Index_Link++)
 	{
-		int Count_Links = FPDFLink_GetURL(PDF_Links, Index_Link, NULL, 0);
-		int BufferLenght = Count_Links * 2;
+		const int Count_Links = FPDFLink_GetURL(PDF_Links, Index_Link, NULL, 0);
+		const int BufferLenght = Count_Links * 2;
 		unsigned short* CharBuffer = (unsigned short*)malloc(static_cast<size_t>(BufferLenght));
 		FPDFLink_GetURL(PDF_Links, Index_Link, CharBuffer, BufferLenght);
 
@@ -510,6 +523,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Links(TArray<FString>& Out_Links, UPARAM(re
 
 		Out_Links.Add(LinkText);
 		free(CharBuffer);
+		CharBuffer = nullptr;
 	}
 
 	FPDFLink_CloseWebLinks(PDF_Links);
@@ -539,8 +553,8 @@ bool UFF_PDFiumBPLibrary::PDFium_Select_Text(FString& Out_Text, UPARAM(ref)UPDFi
 	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 	FPDF_TEXTPAGE PDF_TextPage = FPDFText_LoadPage(PDF_Page);
 
-	int Count_Texts = FPDFText_GetBoundedText(PDF_TextPage, Start.X, Start.Y, End.X, End.Y, NULL, 0);
-	int BufferLenght = (Count_Texts + 1) * 2;
+	const int Count_Texts = FPDFText_GetBoundedText(PDF_TextPage, Start.X, Start.Y, End.X, End.Y, NULL, 0);
+	const int BufferLenght = (Count_Texts + 1) * 2;
 	unsigned short* CharBuffer = (unsigned short*)malloc(static_cast<size_t>(BufferLenght));
 	FPDFText_GetBoundedText(PDF_TextPage, Start.X, Start.Y, End.X, End.Y, CharBuffer, BufferLenght);
 	
@@ -552,6 +566,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Select_Text(FString& Out_Text, UPARAM(ref)UPDFi
 	FPDFText_ClosePage(PDF_TextPage);
 	FPDF_ClosePage(PDF_Page);
 	free(CharBuffer);
+	CharBuffer = nullptr;
 
 	return true;
 }
@@ -573,12 +588,13 @@ bool UFF_PDFiumBPLibrary::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos
 		return false;
 	}
 
-	int32 PagesCount = FPDF_GetPageCount(In_PDF->Document);
+	const int32 PagesCount = FPDF_GetPageCount(In_PDF->Document);
+
 	for (int32 Index_Pages = 0; Index_Pages < PagesCount; Index_Pages++)
 	{
 		FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, Index_Pages);
-		double PDF_Page_Width = FPDF_GetPageWidth(PDF_Page);
-		double PDF_Page_Height = FPDF_GetPageHeight(PDF_Page);
+		const double PDF_Page_Width = FPDF_GetPageWidth(PDF_Page);
+		const double PDF_Page_Height = FPDF_GetPageHeight(PDF_Page);
 		Out_Infos.Add(FVector2D(PDF_Page_Width, PDF_Page_Height));
 
 		FPDF_ClosePage(PDF_Page);
@@ -619,7 +635,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Pages_Add(UPARAM(ref)UPDFiumDoc*& In_PDF, TArra
 		return false;
 	}
 
-	int32 PageCount = FPDF_GetPageCount(In_PDF->Document);
+	const int32 PageCount = FPDF_GetPageCount(In_PDF->Document);
 
 	for (int32 Index_Pages = 0; Index_Pages < Pages.Num(); Index_Pages++)
 	{
@@ -650,6 +666,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Pages_Delete(UPARAM(ref)UPDFiumDoc*& In_PDF, in
 	}
 	
 	FPDF_PAGE TargetPage = FPDF_LoadPage(In_PDF->Document, PageIndex);
+	
 	if (!TargetPage)
 	{
 		return false;
@@ -681,51 +698,51 @@ bool UFF_PDFiumBPLibrary::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, UPAR
 	FString Name_String;
 	switch (Font_Name)
 	{
-	case EStandartFonts::Helvetica:
-		Name_String = "Helvetica";
-		break;
-	case EStandartFonts::Helvetica_Italic:
-		Name_String = "Helvetica-Italic";
-		break;
-	case EStandartFonts::Helvetica_Bold:
-		Name_String = "Helvetica-Bold";
-		break;
-	case EStandartFonts::Helvetica_BoldItalic:
-		Name_String = "Helvetica-BoldItalic";
-		break;
-	case EStandartFonts::Times_Roman:
-		Name_String = "Times-Roman";
-		break;
-	case EStandartFonts::Times_Bold:
-		Name_String = "Times-Bold";
-		break;
-	case EStandartFonts::Times_BoldItalic:
-		Name_String = "Times-BoldItalic";
-		break;
-	case EStandartFonts::Times_Italic:
-		Name_String = "Times-Italic";
-		break;
-	case EStandartFonts::Courier:
-		Name_String = "Courier";
-		break;
-	case EStandartFonts::Courier_Bold:
-		Name_String = "Courier-Bold";
-		break;
-	case EStandartFonts::Courier_Oblique:
-		Name_String = "Courier-Oblique";
-		break;
-	case EStandartFonts::Courier_BoldOblique:
-		Name_String = "Courier-BoldOblique";
-		break;
-	case EStandartFonts::Symbol:
-		Name_String = "Symbol";
-		break;
-	case EStandartFonts::ZapfDingbats:
-		Name_String = "ZapfDingbats";
-		break;
-	default:
-		Name_String = "Helvetica";
-		break;
+		case EStandartFonts::Helvetica:
+			Name_String = "Helvetica";
+			break;
+		case EStandartFonts::Helvetica_Italic:
+			Name_String = "Helvetica-Italic";
+			break;
+		case EStandartFonts::Helvetica_Bold:
+			Name_String = "Helvetica-Bold";
+			break;
+		case EStandartFonts::Helvetica_BoldItalic:
+			Name_String = "Helvetica-BoldItalic";
+			break;
+		case EStandartFonts::Times_Roman:
+			Name_String = "Times-Roman";
+			break;
+		case EStandartFonts::Times_Bold:
+			Name_String = "Times-Bold";
+			break;
+		case EStandartFonts::Times_BoldItalic:
+			Name_String = "Times-BoldItalic";
+			break;
+		case EStandartFonts::Times_Italic:
+			Name_String = "Times-Italic";
+			break;
+		case EStandartFonts::Courier:
+			Name_String = "Courier";
+			break;
+		case EStandartFonts::Courier_Bold:
+			Name_String = "Courier-Bold";
+			break;
+		case EStandartFonts::Courier_Oblique:
+			Name_String = "Courier-Oblique";
+			break;
+		case EStandartFonts::Courier_BoldOblique:
+			Name_String = "Courier-BoldOblique";
+			break;
+		case EStandartFonts::Symbol:
+			Name_String = "Symbol";
+			break;
+		case EStandartFonts::ZapfDingbats:
+			Name_String = "ZapfDingbats";
+			break;
+		default:
+			Name_String = "Helvetica";
+			break;
 	}
 
 	FPDF_FONT Font = FPDFText_LoadStandardFont(In_PDF->Document, TCHAR_TO_UTF8(*Name_String));
@@ -766,6 +783,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPAR
 	}
 
 	FString Path = FPlatformFileManager::Get().GetPlatformFile().ConvertToAbsolutePathForExternalAppForRead(*Font_Path);
+
 	if (FPaths::FileExists(Path) == false)
 	{
 		return false;
@@ -777,15 +795,15 @@ bool UFF_PDFiumBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPAR
 	int FontType = 0;
 	switch (In_Font_Type)
 	{
-	case EExternalFonts::TrueType:
-		FontType = FPDF_FONT_TRUETYPE;
-		break;
-	case EExternalFonts::TYPE1:
-		FontType = FPDF_FONT_TYPE1;
-		break;
-	default:
-		FontType = FPDF_FONT_TRUETYPE;
-		break;
+		case EExternalFonts::TrueType:
+			FontType = FPDF_FONT_TRUETYPE;
+			break;
+		case EExternalFonts::TYPE1:
+			FontType = FPDF_FONT_TYPE1;
+			break;
+		default:
+			FontType = FPDF_FONT_TRUETYPE;
+			break;
 	}
 
 	FPDF_FONT External_Font = FPDFText_LoadFont(In_PDF->Document, reinterpret_cast<const uint8_t*>(ByteArray.GetData()), ByteArray.GetAllocatedSize(), FontType, bIsCid);
@@ -797,13 +815,6 @@ bool UFF_PDFiumBPLibrary::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, UPAR
 	ByteArray.Empty();
 
 	return true;
-}
-
-void UPDFiumFont::BeginDestroy()
-{
-	FPDFFont_Close(this->Font);
-
-	Super::BeginDestroy();
 }
 
 void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumDoc*& In_PDF, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes)
@@ -844,8 +855,8 @@ void UFF_PDFiumBPLibrary::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UP
 			TArray<FPDF_PAGE> Array_Pages;
 			Array_Pages.Add(First_Page);
 
-			int32 Acceptable_Horizontal = 2 * ((FPDF_GetPageWidth(First_Page) - Position.X - Border.X) / FontSize);
-			int32 Acceptable_Vertical = (Position.Y - Border.Y) / FontSize;
+			const int32 Acceptable_Horizontal = 2 * ((FPDF_GetPageWidth(First_Page) - Position.X - Border.X) / FontSize);
+			const int32 Acceptable_Vertical = (Position.Y - Border.Y) / FontSize;
 
 			// Generate paragraphs.
 			TArray<FString> Array_Paragraphs;
@@ -999,7 +1010,7 @@ bool UFF_PDFiumBPLibrary::PDFium_Draw_Rectangle(UPARAM(ref)UPDFiumDoc*& In_PDF, 
 		return false;
 	}
 
-	int BaseResolution = 256;
+	const int BaseResolution = 256;
 
 	FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, PageIndex);
 	FPDF_PAGEOBJECT Image_Object = FPDFPageObj_NewImageObj(In_PDF->Document);
