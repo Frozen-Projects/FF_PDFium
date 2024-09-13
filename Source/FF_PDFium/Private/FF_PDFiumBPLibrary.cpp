@@ -3,20 +3,6 @@
 #include "FF_PDFiumBPLibrary.h"
 #include "FF_PDFium.h"
 
-// UE Mechanics Includes.
-#include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetStringLibrary.h"
-
-#include "ImageCore.h"
-#include "ImageUtils.h"  
-#include "Engine/TextureRenderTarget2D.h"
-
-THIRD_PARTY_INCLUDES_START
-// PDFium Includes.
-#include "fpdf_text.h"
-#include "fpdf_formfill.h"
-THIRD_PARTY_INCLUDES_END
-
 // Global library initialization checker.
 bool Global_IsPDFiumInitialized = false;
 
@@ -149,40 +135,50 @@ bool UFF_PDFiumBPLibrary::PDFium_Doc_Open_Memory(UPDFiumDoc*& Out_PDF, FString& 
 	return true;
 }
 
-bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling, FColor BG_Color, bool bUseSrgb, bool bUseMatrix, bool bUseAlpha, bool bRenderAnnots)
+bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling, FColor BG_Color, bool bUseSrgb, bool bUseMatrix, bool bUseAlpha, bool bRenderAnnots)
 {	
-	if (Global_IsPDFiumInitialized == false)
+	FJsonObjectWrapper TempCode;
+	TempCode.JsonObject->SetStringField("PluginName", "FF_PDFium");
+	TempCode.JsonObject->SetStringField("ClassName", "UFF_PDFiumBPLibrary");
+	TempCode.JsonObject->SetStringField("FunctionName", "PDFium_Get_Pages");
+	TempCode.JsonObject->SetStringField("AdditionalInfo", "");
+
+	if (!Global_IsPDFiumInitialized)
 	{
+		TempCode.JsonObject->SetStringField("Description", "PDFium has not been initialized.");
 		return false;
 	}
 
-	if (IsValid(In_PDF) == false)
+	if (!IsValid(In_PDF))
 	{
+		TempCode.JsonObject->SetStringField("Description", "PDF \"object\" is not valid.");
 		return false;
 	}
 
 	if (!In_PDF->Document)
 	{
+		TempCode.JsonObject->SetStringField("Description", "PDFium \"file\" is not valid.");
 		return false;
 	}
 
-	double Sampling = 1;
-	if (In_Sampling < 1)
-	{
-		Sampling = 1;
-	}
-
-	else
-	{
-		Sampling = In_Sampling;
-	}
+	const double Sampling = In_Sampling < 1 ? 1 : In_Sampling;
+	TArray<int32> SkippedPages;
 
 	for (int32 Index_Pages = 0; Index_Pages < FPDF_GetPageCount(In_PDF->Document); Index_Pages++)
 	{		
-		FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, Index_Pages);
+		const FPDF_PAGE PDF_Page = FPDF_LoadPage(In_PDF->Document, Index_Pages);
 		
 		const double PDF_Page_Width = FPDF_GetPageWidth(PDF_Page);
 		const double PDF_Page_Height = FPDF_GetPageHeight(PDF_Page);
+
+		if (PDF_Page_Width <= 0 || PDF_Page_Height <= 0)
+		{
+			SkippedPages.Add(Index_Pages);
+
+			FPDF_ClosePage(PDF_Page);
+			continue;
+		}
+
 		const int32 Render_Width = PDF_Page_Width * Sampling;
 		const int32 Render_Height = PDF_Page_Height * Sampling;
 		const size_t Lenght = static_cast<size_t>(Render_Width * Render_Height * 4);
@@ -223,6 +219,15 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pag
 		}
 
 		void* Buffer = FPDFBitmap_GetBuffer(PDF_Bitmap);
+
+		if (!Buffer)
+		{
+			SkippedPages.Add(Index_Pages);
+
+			FPDFBitmap_Destroy(PDF_Bitmap);
+			FPDF_ClosePage(PDF_Page);
+			continue;
+		}
 		
 		UTexture2D* PDF_Texture = UTexture2D::CreateTransient(Render_Width, Render_Height, PF_B8G8R8A8);
 		PDF_Texture->SRGB = bUseSrgb;
@@ -238,15 +243,34 @@ bool UFF_PDFiumBPLibrary::PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pag
 		FPDF_ClosePage(PDF_Page);
 	}
 
-	if (Out_Pages.Num() > 0)
-	{
-		return true;
-	}
+	const bool IsSuccessfull = Out_Pages.Num() > 0 ? true : false;
+	TempCode.JsonObject->SetStringField("Description", IsSuccessfull ? "PDF rendered successfully." : "There was a problem while rendering PDF file.");
 
-	else
-	{
-		return false;
-	}
+	auto GetSkippedPages = [](TArray<int32> In_Skipped)->FString
+		{
+			if (In_Skipped.IsEmpty())
+			{
+				return FString();
+			}
+
+			FString Temp_String;
+			const int32 LastIndex = In_Skipped.Num() - 1;
+
+			for (int32 Index_Skipped = 0; Index_Skipped < In_Skipped.Num(); Index_Skipped++)
+			{
+				Temp_String += FString::FromInt(In_Skipped[Index_Skipped]);
+
+				if (Index_Skipped != LastIndex)
+				{
+					Temp_String += "-";
+				}
+			}
+
+			return Temp_String;
+		};
+	TempCode.JsonObject->SetStringField("AdditionalInfo", SkippedPages.IsEmpty() ? "" : "SkippedPages : " + GetSkippedPages(SkippedPages));
+
+	return IsSuccessfull;
 }
 
 bool UFF_PDFiumBPLibrary::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb)

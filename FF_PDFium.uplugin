@@ -25,6 +25,10 @@
 		{
 			"Name": "ExtendedVars",
 			"Enabled": true
+		},
+		{
+			"Name": "JsonBlueprintUtilities",
+			"Enabled": true
 		}
 	]
 }

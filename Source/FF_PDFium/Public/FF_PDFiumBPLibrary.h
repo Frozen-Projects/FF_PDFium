@@ -101,7 +101,7 @@ class UFF_PDFiumBPLibrary : public UBlueprintFunctionLibrary
 	* @param bUseMatrix Don't use this boolean. Currently it is exprimental and doesn't work.
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Get Pages", Keywords = "pdfium, pdf, document, read, get, pages"), Category = "PDFium|Read")
-	static FF_PDFIUM_API bool PDFium_Get_Pages(TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling = 1, FColor BG_Color = FColor::White, bool bUseSrgb = true, bool bUseMatrix = false, bool bUseAlpha = true, bool bRenderAnnots = true);
+	static FF_PDFIUM_API bool PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*, FVector2D>& Out_Pages, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 In_Sampling = 1, FColor BG_Color = FColor::White, bool bUseSrgb = true, bool bUseMatrix = false, bool bUseAlpha = true, bool bRenderAnnots = true);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Get Images", Keywords = "pdfium, pdf, document, read, get, images"), Category = "PDFium|Read")
 	static FF_PDFIUM_API bool PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, UPARAM(ref)UPDFiumDoc*& In_PDF, int32 PageIndex, bool bUseSrgb = true);

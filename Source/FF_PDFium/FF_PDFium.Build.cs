@@ -50,10 +50,14 @@ public class FF_PDFium : ModuleRules
                 "RHI",
 				"RenderCore",
 				"ImageCore",
-                "ExtendedVars",
+                "ExtendedVars",                
+				"Json",
+                "JsonUtilities",
+                "JsonBlueprintUtilities",
+
 				// ... add private dependencies that you statically link with here ...	
 			}
-			);
+            );
 		
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
