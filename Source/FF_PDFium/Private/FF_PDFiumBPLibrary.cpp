@@ -49,7 +49,6 @@ bool UFF_PDFiumBPLibrary::PDFium_LibInit(FString& Out_Code)
 	
 	FPDF_LIBRARY_CONFIG config;
 	FMemory::Memset(&config, 0, sizeof(config));
-
 	config.version = 2;
 	config.m_pUserFontPaths = NULL;
 	config.m_pIsolate = NULL;
