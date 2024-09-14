@@ -1,8 +1,12 @@
 #pragma once
 
 // Custom Includes.
-#include "FF_PDFium_Font.h"
+#include "FF_PDFium_Includes.h"
+
 #include "FF_PDFium_Doc.generated.h"
+
+class AFF_PDFium_Manager;
+class UPDFiumFont;
 
 UDELEGATE(BlueprintAuthorityOnly)
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FDelegatePdfium, bool, bIsSuccessfull, FString, OutCode);
@@ -68,6 +72,10 @@ class FF_PDFIUM_API UPDFiumDoc : public UObject
 {
 	GENERATED_BODY()
 
+private:
+
+	AFF_PDFium_Manager* Manager = nullptr;
+
 public:
 
 	// ~UPDFiumDoc start.
@@ -75,6 +83,9 @@ public:
 	// ~UPDFiumDoc finish.
 
 	FPDF_DOCUMENT Document = NULL;
+
+	virtual bool SetManager(AFF_PDFium_Manager* In_Manager);
+	virtual AFF_PDFium_Manager* GetManager();
 
 	/**
 	* @param In_Sampling Default (also minimum) value is "1" but "2" gives best result for A4 sized PDF on 17 inch notebook screen. Bigger values is good for 3D widget like huge UIs.

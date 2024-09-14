@@ -1,5 +1,8 @@
 #include "FF_PDFium_Doc.h"
-#include "FF_PDFiumBPLibrary.h"
+
+// Custom Includes.
+#include "FF_PDFium_Manager.h"
+#include "FF_PDFium_Font.h"
 
 #pragma region SAVE_SYSTEM
 
@@ -90,6 +93,22 @@ void UPDFiumDoc::BeginDestroy()
 	Super::BeginDestroy();
 }
 
+bool UPDFiumDoc::SetManager(AFF_PDFium_Manager* In_Manager)
+{
+	if (!IsValid(In_Manager))
+	{
+		return false;
+	}
+
+	this->Manager = In_Manager;
+	return true;
+}
+
+AFF_PDFium_Manager* UPDFiumDoc::GetManager()
+{
+	return this->Manager;
+}
+
 bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*, FVector2D>& Out_Pages, int32 In_Sampling, FColor BG_Color, bool bUseSrgb, bool bUseMatrix, bool bUseAlpha, bool bRenderAnnots)
 {
 	FJsonObjectWrapper TempCode;
@@ -98,7 +117,7 @@ bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*
 	TempCode.JsonObject->SetStringField("FunctionName", "PDFium_Get_Pages");
 	TempCode.JsonObject->SetStringField("AdditionalInfo", "");
 
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		TempCode.JsonObject->SetStringField("Description", "PDFium has not been initialized.");
 		return false;
@@ -224,7 +243,7 @@ bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*
 
 bool UPDFiumDoc::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, int32 PageIndex, bool bUseSrgb)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -282,7 +301,7 @@ bool UPDFiumDoc::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, int
 
 bool UPDFiumDoc::PDFium_Get_All_Texts(TArray<FString>& Out_Texts)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -317,7 +336,7 @@ bool UPDFiumDoc::PDFium_Get_All_Texts(TArray<FString>& Out_Texts)
 
 bool UPDFiumDoc::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, int32 PageIndex)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -409,7 +428,7 @@ bool UPDFiumDoc::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, int32 PageI
 
 bool UPDFiumDoc::PDFium_Get_Links(TArray<FString>& Out_Links, int32 PageIndex)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -457,7 +476,7 @@ bool UPDFiumDoc::PDFium_Get_Links(TArray<FString>& Out_Links, int32 PageIndex)
 
 bool UPDFiumDoc::PDFium_Select_Text(FString& Out_Text, FVector2D Start, FVector2D End, int32 PageIndex)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -490,7 +509,7 @@ bool UPDFiumDoc::PDFium_Select_Text(FString& Out_Text, FVector2D Start, FVector2
 
 bool UPDFiumDoc::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -517,7 +536,7 @@ bool UPDFiumDoc::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos)
 
 bool UPDFiumDoc::PDFium_Pages_Add(TArray<FVector2D> Pages)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -542,7 +561,7 @@ bool UPDFiumDoc::PDFium_Pages_Add(TArray<FVector2D> Pages)
 
 bool UPDFiumDoc::PDFium_Pages_Delete(int32 PageIndex)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -567,7 +586,7 @@ bool UPDFiumDoc::PDFium_Pages_Delete(int32 PageIndex)
 
 bool UPDFiumDoc::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, EStandartFonts Font_Name)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -644,7 +663,7 @@ bool UPDFiumDoc::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, EStandartFont
 
 bool UPDFiumDoc::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, FString Font_Path, EExternalFonts In_Font_Type, bool bIsCid)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -696,7 +715,7 @@ bool UPDFiumDoc::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, FString Font_
 
 void UPDFiumDoc::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		DelegateAddObject.Execute(false, "PDFium Library haven't been initialized.");
 	}
@@ -867,7 +886,7 @@ void UPDFiumDoc::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)
 
 bool UPDFiumDoc::PDFium_Draw_Rectangle(FVector2D Position, FVector2D Anchor, FVector2D Size, FVector2D Rotation, FColor Color, int32 PageIndex)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -907,7 +926,7 @@ bool UPDFiumDoc::PDFium_Draw_Rectangle(FVector2D Position, FVector2D Anchor, FVe
 
 bool UPDFiumDoc::PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -1050,7 +1069,7 @@ bool UPDFiumDoc::PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVe
 
 bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
@@ -1087,7 +1106,7 @@ bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveT
 
 bool UPDFiumDoc::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
-	if (!UFF_PDFiumBPLibrary::PDFium_LibState())
+	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
 	}
