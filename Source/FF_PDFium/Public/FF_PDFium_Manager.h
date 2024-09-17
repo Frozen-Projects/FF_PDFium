@@ -19,7 +19,7 @@ class FF_PDFIUM_API AFF_PDFium_Manager : public AActor
 
 private:
 
-	TArray<UPDFiumDoc*> Array_PDFs;
+	FPDF_LIBRARY_CONFIG config;
 	bool bIsPdfiumStarted = false;
 
 protected:
@@ -31,6 +31,9 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
+
+	UPROPERTY()
+	TArray<UPDFiumDoc*> Array_PDFs;
 
 	// Sets default values for this actor's properties.
 	AFF_PDFium_Manager();
@@ -55,4 +58,5 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Create Document", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, pdf"), Category = "PDFium|Write")
 	virtual bool PDFium_Create_Doc(UPDFiumDoc*& Out_PDF);
+
 };

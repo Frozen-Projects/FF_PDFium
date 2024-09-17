@@ -28,12 +28,8 @@ void AFF_PDFium_Manager::BeginPlay()
 // Called when the game ends or when destroyed.
 void AFF_PDFium_Manager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	this->PDFium_LibClose();
 	Super::EndPlay(EndPlayReason);
-	
-	FTimerHandle DelayTimer;
-	FTimerDelegate DelayDelegate;
-	DelayDelegate.BindUObject(this, &AFF_PDFium_Manager::PDFium_LibClose);
-	//GEngine->GetCurrentPlayWorld()->GetTimerManager().SetTimer(DelayTimer, DelayDelegate, 0.2, false);
 }
 
 // Called every frame.
@@ -55,31 +51,43 @@ bool AFF_PDFium_Manager::PDFium_LibInit(FString& Out_Code)
 		return false;
 	}
 
-	FPDF_LIBRARY_CONFIG config;
-	FMemory::Memset(&config, 0, sizeof(config));
-	config.version = 2;
-	config.m_pUserFontPaths = NULL;
-	config.m_pIsolate = NULL;
-	config.m_v8EmbedderSlot = 0;
-	FPDF_InitLibraryWithConfig(&config);
-	
-	Out_Code = "Library successfully initialized.";
-	this->bIsPdfiumStarted = true;
+	try
+	{
+		FMemory::Memset(&this->config, 0, sizeof(this->config));
+		this->config.version = 2;
+		this->config.m_pUserFontPaths = NULL;
+		this->config.m_pIsolate = NULL;
+		this->config.m_v8EmbedderSlot = 0;
+		FPDF_InitLibraryWithConfig(&this->config);
 
-	return true;
+		Out_Code = "Library successfully initialized.";
+		this->bIsPdfiumStarted = true;
+
+		return true;
+	}
+
+	catch (const std::exception& Exception)
+	{
+		Out_Code = Exception.what();
+		return false;
+	}
 }
 
 void AFF_PDFium_Manager::PDFium_LibClose()
 {
-	if (!Array_PDFs.IsEmpty())
+	if (!this->Array_PDFs.IsEmpty())
 	{
-		for (UPDFiumDoc* EachPDF : this->Array_PDFs)
+		for (int32 Index_PDFs = 0; Index_PDFs < this->Array_PDFs.Num(); Index_PDFs++)
 		{
-			if (EachPDF->Document)
+			UPDFiumDoc* EachDoc = this->Array_PDFs[Index_PDFs];
+
+			if (IsValid(EachDoc))
 			{
-				FPDF_CloseDocument(EachPDF->Document);
+				EachDoc->ConditionalBeginDestroy();
 			}
 		}
+
+		this->Array_PDFs.Empty();
 	}
 
 	FPDF_DestroyLibrary();

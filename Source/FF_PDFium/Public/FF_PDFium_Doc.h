@@ -78,6 +78,8 @@ private:
 
 public:
 
+	TArray<UPDFiumFont*> Array_Fonts;
+
 	// ~UPDFiumDoc start.
 	void BeginDestroy();
 	// ~UPDFiumDoc finish.

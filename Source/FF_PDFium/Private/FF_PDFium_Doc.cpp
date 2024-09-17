@@ -85,9 +85,29 @@ TArray64<uint8> UPDFiumSave::Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSav
 
 void UPDFiumDoc::BeginDestroy()
 {
+	if (!this->Array_Fonts.IsEmpty())
+	{
+		for (int32 Index_Font = 0; Index_Font < this->Array_Fonts.Num(); Index_Font++)
+		{
+			UPDFiumFont* EachFont = this->Array_Fonts[Index_Font];
+
+			if (IsValid(EachFont))
+			{
+				EachFont->ConditionalBeginDestroy();
+			}
+		}
+
+		this->Array_Fonts.Empty();
+	}
+
 	if (this->Document)
 	{
 		FPDF_CloseDocument(this->Document);
+	}
+
+	if (IsValid(this->Manager))
+	{
+		this->Manager->Array_PDFs.Remove(this);
 	}
 
 	Super::BeginDestroy();
@@ -116,6 +136,12 @@ bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*
 	TempCode.JsonObject->SetStringField("ClassName", "UFF_PDFiumBPLibrary");
 	TempCode.JsonObject->SetStringField("FunctionName", "PDFium_Get_Pages");
 	TempCode.JsonObject->SetStringField("AdditionalInfo", "");
+
+	if (!IsValid(this->Manager))
+	{
+		TempCode.JsonObject->SetStringField("Description", "PDFium manager is not valid.");
+		return false;
+	}
 
 	if (!this->Manager->PDFium_LibState())
 	{
@@ -243,6 +269,11 @@ bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*
 
 bool UPDFiumDoc::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, int32 PageIndex, bool bUseSrgb)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -301,6 +332,11 @@ bool UPDFiumDoc::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, int
 
 bool UPDFiumDoc::PDFium_Get_All_Texts(TArray<FString>& Out_Texts)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -336,6 +372,11 @@ bool UPDFiumDoc::PDFium_Get_All_Texts(TArray<FString>& Out_Texts)
 
 bool UPDFiumDoc::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, int32 PageIndex)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -428,6 +469,11 @@ bool UPDFiumDoc::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, int32 PageI
 
 bool UPDFiumDoc::PDFium_Get_Links(TArray<FString>& Out_Links, int32 PageIndex)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -476,6 +522,11 @@ bool UPDFiumDoc::PDFium_Get_Links(TArray<FString>& Out_Links, int32 PageIndex)
 
 bool UPDFiumDoc::PDFium_Select_Text(FString& Out_Text, FVector2D Start, FVector2D End, int32 PageIndex)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -509,6 +560,11 @@ bool UPDFiumDoc::PDFium_Select_Text(FString& Out_Text, FVector2D Start, FVector2
 
 bool UPDFiumDoc::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -536,6 +592,11 @@ bool UPDFiumDoc::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos)
 
 bool UPDFiumDoc::PDFium_Pages_Add(TArray<FVector2D> Pages)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -561,6 +622,11 @@ bool UPDFiumDoc::PDFium_Pages_Add(TArray<FVector2D> Pages)
 
 bool UPDFiumDoc::PDFium_Pages_Delete(int32 PageIndex)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -586,6 +652,11 @@ bool UPDFiumDoc::PDFium_Pages_Delete(int32 PageIndex)
 
 bool UPDFiumDoc::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, EStandartFonts Font_Name)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -653,16 +724,20 @@ bool UPDFiumDoc::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, EStandartFont
 		return false;
 	}
 
-	UPDFiumFont* FontObject = NewObject<UPDFiumFont>();
-	FontObject->Font = Font;
-
-	Out_Font = FontObject;
+	Out_Font = NewObject<UPDFiumFont>();
+	Out_Font->Font = Font;
+	this->Array_Fonts.Add(Out_Font);
 
 	return true;
 }
 
 bool UPDFiumDoc::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, FString Font_Path, EExternalFonts In_Font_Type, bool bIsCid)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -702,19 +777,29 @@ bool UPDFiumDoc::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, FString Font_
 			break;
 	}
 
-	FPDF_FONT External_Font = FPDFText_LoadFont(this->Document, reinterpret_cast<const uint8_t*>(ByteArray.GetData()), ByteArray.GetAllocatedSize(), FontType, bIsCid);
-	UPDFiumFont* FontObject = NewObject<UPDFiumFont>();
-	FontObject->Font = External_Font;
+	FPDF_FONT Font = FPDFText_LoadFont(this->Document, reinterpret_cast<const uint8_t*>(ByteArray.GetData()), ByteArray.GetAllocatedSize(), FontType, bIsCid);
 
-	Out_Font = FontObject;
+	if (!Font)
+	{
+		return false;
+	}
 
 	ByteArray.Empty();
+
+	Out_Font = NewObject<UPDFiumFont>();
+	Out_Font->Font = Font;
+	this->Array_Fonts.Add(Out_Font);
 
 	return true;
 }
 
 void UPDFiumDoc::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)UPDFiumFont*& In_Font, FString In_Texts, FColor Text_Color, FVector2D Position, FVector2D Size, FVector2D Rotation, FVector2D Border, int32 FontSize, int32 PageIndex, bool bUseCharcodes)
 {
+	if (!IsValid(this->Manager))
+	{
+		DelegateAddObject.Execute(false, "PDFium manager is not valid.");
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		DelegateAddObject.Execute(false, "PDFium Library haven't been initialized.");
@@ -886,6 +971,11 @@ void UPDFiumDoc::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)
 
 bool UPDFiumDoc::PDFium_Draw_Rectangle(FVector2D Position, FVector2D Anchor, FVector2D Size, FVector2D Rotation, FColor Color, int32 PageIndex)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -926,6 +1016,12 @@ bool UPDFiumDoc::PDFium_Draw_Rectangle(FVector2D Position, FVector2D Anchor, FVe
 
 bool UPDFiumDoc::PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex)
 {
+	if (!IsValid(this->Manager))
+	{
+		Out_Code = "PDFium manager is not valid.";
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -1069,6 +1165,11 @@ bool UPDFiumDoc::PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVe
 
 bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;
@@ -1106,6 +1207,11 @@ bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveT
 
 bool UPDFiumDoc::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
 	if (!this->Manager->PDFium_LibState())
 	{
 		return false;

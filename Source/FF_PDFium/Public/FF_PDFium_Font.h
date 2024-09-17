@@ -5,6 +5,8 @@
 
 #include "FF_PDFium_Font.generated.h"
 
+class UPDFiumDoc;
+
 UCLASS(BlueprintType)
 class FF_PDFIUM_API UPDFiumFont : public UObject
 {
@@ -12,6 +14,7 @@ class FF_PDFIUM_API UPDFiumFont : public UObject
 
 public:
 
+	UPDFiumDoc* Document = nullptr;
 	FPDF_FONT Font = NULL;
 
 	// ~UPDFiumFont start.
