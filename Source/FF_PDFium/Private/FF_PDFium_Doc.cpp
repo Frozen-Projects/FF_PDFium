@@ -262,6 +262,7 @@ bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*
 
 			return Temp_String;
 		};
+
 	TempCode.JsonObject->SetStringField("AdditionalInfo", SkippedPages.IsEmpty() ? "" : "SkippedPages : " + GetSkippedPages(SkippedPages));
 
 	return IsSuccessfull;
