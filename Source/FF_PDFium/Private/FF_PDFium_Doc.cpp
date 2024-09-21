@@ -105,11 +105,6 @@ void UPDFiumDoc::BeginDestroy()
 		FPDF_CloseDocument(this->Document);
 	}
 
-	if (IsValid(this->Manager))
-	{
-		this->Manager->Array_PDFs.Remove(this);
-	}
-
 	Super::BeginDestroy();
 }
 

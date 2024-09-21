@@ -5,11 +5,6 @@
 
 void UPDFiumFont::BeginDestroy()
 {
-	if (IsValid(this->Document))
-	{
-		this->Document->Array_Fonts.Remove(this);
-	}
-
 	if (this->Font)
 	{
 		FPDFFont_Close(this->Font);
