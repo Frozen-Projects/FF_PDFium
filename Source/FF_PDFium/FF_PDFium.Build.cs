@@ -9,7 +9,7 @@ public class FF_PDFium : ModuleRules
 	public FF_PDFium(ReadOnlyTargetRules Target) : base(Target)
 	{
         PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-        bEnableUndefinedIdentifierWarnings = false;
+        UndefinedIdentifierWarningLevel = WarningLevel.Off;
         bEnableExceptions = true;
 
         if (UnrealTargetPlatform.Win64 == Target.Platform)
