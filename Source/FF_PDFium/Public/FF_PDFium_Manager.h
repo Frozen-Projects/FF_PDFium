@@ -53,8 +53,11 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from File", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, file"), Category = "PDFium|Read")
 	virtual bool PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from Memory", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, memory"), Category = "PDFium|Read")
-	virtual bool PDFium_Doc_Open_Memory(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password);
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from Memory x64", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, memory"), Category = "PDFium|Read")
+	virtual bool PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password);
+
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from Memory x86", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, memory"), Category = "PDFium|Read")
+	virtual bool PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FString& ErrorCode, TArray<uint8> In_Bytes, FString In_PDF_Password);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Create Document", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, pdf"), Category = "PDFium|Write")
 	virtual bool PDFium_Create_Doc(UPDFiumDoc*& Out_PDF);

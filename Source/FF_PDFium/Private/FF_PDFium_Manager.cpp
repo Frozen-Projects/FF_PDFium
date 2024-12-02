@@ -94,7 +94,7 @@ void AFF_PDFium_Manager::PDFium_LibClose()
 	this->bIsPdfiumStarted = false;
 }
 
-bool AFF_PDFium_Manager::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString this_Password)
+bool AFF_PDFium_Manager::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password)
 {
 	if (!this->bIsPdfiumStarted)
 	{
@@ -118,7 +118,7 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& Err
 
 	FPaths::MakePlatformFilename(Path);
 
-	FPDF_DOCUMENT Temp_Document = FPDF_LoadDocument(TCHAR_TO_UTF8(*Path), TCHAR_TO_UTF8(*this_Password));
+	FPDF_DOCUMENT Temp_Document = FPDF_LoadDocument(TCHAR_TO_UTF8(*Path), TCHAR_TO_UTF8(*In_PDF_Password));
 
 	if (!Temp_Document)
 	{
@@ -137,7 +137,7 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& Err
 	return true;
 }
 
-bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString this_Password)
+bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password)
 {
 	if (!this->bIsPdfiumStarted)
 	{
@@ -159,7 +159,42 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory(UPDFiumDoc*& Out_PDF, FString& E
 	void* PDF_Data = In_Bytes_Object->ByteArray.GetData();
 	const size_t PDF_Data_Size = In_Bytes_Object->ByteArray.Num();
 
-	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument64(PDF_Data, PDF_Data_Size, TCHAR_TO_UTF8(*this_Password));
+	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument64(PDF_Data, PDF_Data_Size, TCHAR_TO_UTF8(*In_PDF_Password));
+
+	if (!Temp_Document)
+	{
+		ErrorCode = "PDF is invalid.";
+		return false;
+	}
+
+	FPDF_LoadXFA(Temp_Document);
+
+	Out_PDF = NewObject<UPDFiumDoc>();
+	Out_PDF->Document = Temp_Document;
+	Out_PDF->SetManager(this);
+	this->Array_PDFs.Add(Out_PDF);
+
+	ErrorCode = "Success.";
+	return true;
+}
+
+bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FString& ErrorCode, TArray<uint8> In_Bytes, FString In_PDF_Password)
+{
+	if (!this->bIsPdfiumStarted)
+	{
+		return false;
+	}
+
+	if (In_Bytes.IsEmpty())
+	{
+		ErrorCode = "Byte array is empty !";
+		return false;
+	}
+
+	void* PDF_Data = In_Bytes.GetData();
+	const size_t PDF_Data_Size = In_Bytes.Num();
+
+	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument64(PDF_Data, PDF_Data_Size, TCHAR_TO_UTF8(*In_PDF_Password));
 
 	if (!Temp_Document)
 	{
