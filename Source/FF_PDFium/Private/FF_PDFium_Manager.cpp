@@ -191,10 +191,9 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FStrin
 		return false;
 	}
 
-	void* PDF_Data = In_Bytes.GetData();
-	const size_t PDF_Data_Size = In_Bytes.Num();
-
-	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument64(PDF_Data, PDF_Data_Size, TCHAR_TO_UTF8(*In_PDF_Password));
+	void* PDF_Data = malloc(In_Bytes.Num());
+	FMemory::Memcpy(PDF_Data, In_Bytes.GetData(), In_Bytes.Num());
+	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument(PDF_Data, In_Bytes.Num(), TCHAR_TO_UTF8(*In_PDF_Password));
 
 	if (!Temp_Document)
 	{
