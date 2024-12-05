@@ -62,7 +62,6 @@ public:
 	// ~UPDFiumSave finish.
 
 	static TArray64<uint8> PDF_Bytes;
-	static int Callback_Writer(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size);
 	virtual TArray64<uint8> Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
 
 };
@@ -73,6 +72,10 @@ class FF_PDFIUM_API UPDFiumDoc : public UObject
 	GENERATED_BODY()
 
 private:
+
+	// We need to store also PDF buffer in here because if we lose it, we won't be able to run pdfium functions in there future.
+	void* PDF_Data = nullptr;
+	size_t PDF_Data_Size = 0;
 
 	AFF_PDFium_Manager* Manager = nullptr;
 
@@ -88,6 +91,9 @@ public:
 
 	virtual bool SetManager(AFF_PDFium_Manager* In_Manager);
 	virtual AFF_PDFium_Manager* GetManager();
+	virtual bool SetBuffer(const size_t Size, void* Data);
+	virtual void* GetBuffer();
+	virtual size_t GetSize();
 
 	/**
 	* @param In_Sampling Default (also minimum) value is "1" but "2" gives best result for A4 sized PDF on 17 inch notebook screen. Bigger values is good for 3D widget like huge UIs.
@@ -146,7 +152,10 @@ public:
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Save File", ToolTip = "", Keywords = "pdfium, pdf, doc, document, save, file"), Category = "PDF_Reader|Write")
 	virtual bool PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Save Bytes", ToolTip = "", Keywords = "pdfium, pdf, doc, document, save, bytes"), Category = "PDF_Reader|Write")
-	virtual bool PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Save Bytes x64", ToolTip = "", Keywords = "pdfium, pdf, doc, document, save, bytes"), Category = "PDF_Reader|Write")
+	virtual bool PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
+	
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Save Bytes x86", ToolTip = "", Keywords = "pdfium, pdf, doc, document, save, bytes"), Category = "PDF_Reader|Write")
+	virtual bool PDFium_Save_Bytes_x86(TArray<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
 
 };

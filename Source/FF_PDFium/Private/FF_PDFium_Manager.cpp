@@ -156,25 +156,35 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FStrin
 		return false;
 	}
 
-	void* PDF_Data = In_Bytes_Object->ByteArray.GetData();
 	const size_t PDF_Data_Size = In_Bytes_Object->ByteArray.Num();
+	
+	UPDFiumDoc* TempObject = NewObject<UPDFiumDoc>();
+	
+	if (!TempObject->SetBuffer(PDF_Data_Size, In_Bytes_Object->ByteArray.GetData()))
+	{
+		TempObject->ConditionalBeginDestroy();
+		ErrorCode = "There was a problem while setting pdfium buffer !";
+		return false;
+	}
 
-	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument64(PDF_Data, PDF_Data_Size, TCHAR_TO_UTF8(*In_PDF_Password));
+	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument64(TempObject->GetBuffer(), TempObject->GetSize(), TCHAR_TO_UTF8(*In_PDF_Password));
 
 	if (!Temp_Document)
 	{
+		TempObject->ConditionalBeginDestroy();
 		ErrorCode = "PDF is invalid.";
 		return false;
 	}
 
 	FPDF_LoadXFA(Temp_Document);
+	
+	TempObject->Document = Temp_Document;
+	TempObject->SetManager(this);
+	this->Array_PDFs.Add(TempObject);
 
-	Out_PDF = NewObject<UPDFiumDoc>();
-	Out_PDF->Document = Temp_Document;
-	Out_PDF->SetManager(this);
-	this->Array_PDFs.Add(Out_PDF);
+	Out_PDF = TempObject;
+	ErrorCode = "Successful.";
 
-	ErrorCode = "Success.";
 	return true;
 }
 
@@ -191,24 +201,33 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FStrin
 		return false;
 	}
 
-	void* PDF_Data = malloc(In_Bytes.Num());
-	FMemory::Memcpy(PDF_Data, In_Bytes.GetData(), In_Bytes.Num());
-	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument(PDF_Data, In_Bytes.Num(), TCHAR_TO_UTF8(*In_PDF_Password));
+	const size_t PDF_Data_Size = In_Bytes.Num();
+
+	UPDFiumDoc* TempObject = NewObject<UPDFiumDoc>();
+	if (!TempObject->SetBuffer(PDF_Data_Size, In_Bytes.GetData()))
+	{
+		TempObject->ConditionalBeginDestroy();
+		ErrorCode = "There was a problem while setting pdfium buffer !";
+		return false;
+	}
+
+	FPDF_DOCUMENT Temp_Document = FPDF_LoadMemDocument64(TempObject->GetBuffer(), TempObject->GetSize(), TCHAR_TO_UTF8(*In_PDF_Password));
 
 	if (!Temp_Document)
 	{
+		TempObject->ConditionalBeginDestroy();
 		ErrorCode = "PDF is invalid.";
 		return false;
 	}
 
 	FPDF_LoadXFA(Temp_Document);
 
-	Out_PDF = NewObject<UPDFiumDoc>();
-	Out_PDF->Document = Temp_Document;
-	Out_PDF->SetManager(this);
-	this->Array_PDFs.Add(Out_PDF);
+	TempObject->Document = Temp_Document;
+	TempObject->SetManager(this);
+	this->Array_PDFs.Add(TempObject);
 
-	ErrorCode = "Success.";
+	Out_PDF = TempObject;
+	ErrorCode = "Successful.";
 	return true;
 }
 

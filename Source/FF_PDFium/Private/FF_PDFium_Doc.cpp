@@ -14,12 +14,6 @@ void UPDFiumSave::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-int UPDFiumSave::Callback_Writer(FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)
-{
-	PDF_Bytes.Append(static_cast<const uint8*>(pData), size);
-	return size;
-}
-
 TArray64<uint8> UPDFiumSave::Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
 	if (!In_Document)
@@ -27,11 +21,17 @@ TArray64<uint8> UPDFiumSave::Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSav
 		return TArray64<uint8>();
 	}
 
+	auto Callback_Writer = [](FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)->int
+		{
+			PDF_Bytes.Append(static_cast<const uint8*>(pData), size);
+			return size;
+		};
+
 	PDF_Bytes.Empty();
 
 	FPDF_FILEWRITE Writer;
 	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
-	Writer.WriteBlock = UPDFiumSave::Callback_Writer;
+	Writer.WriteBlock = Callback_Writer;
 	Writer.version = 1;
 
 	int Flags = FPDF_INCREMENTAL;
@@ -105,6 +105,7 @@ void UPDFiumDoc::BeginDestroy()
 		FPDF_CloseDocument(this->Document);
 	}
 
+	free(this->PDF_Data);
 	Super::BeginDestroy();
 }
 
@@ -122,6 +123,44 @@ bool UPDFiumDoc::SetManager(AFF_PDFium_Manager* In_Manager)
 AFF_PDFium_Manager* UPDFiumDoc::GetManager()
 {
 	return this->Manager;
+}
+
+bool UPDFiumDoc::SetBuffer(const size_t Size, void* Data)
+{
+	if (!Data)
+	{
+		return false;
+	}
+
+	if (Size == 0)
+	{
+		return false;
+	}
+
+	this->PDF_Data = malloc(Size);
+	FMemory::Memcpy(this->PDF_Data, Data, Size);
+	this->PDF_Data_Size = Size;
+	return true;
+}
+
+void* UPDFiumDoc::GetBuffer()
+{
+	if (!this->PDF_Data)
+	{
+		return nullptr;
+	}
+	
+	if (this->PDF_Data_Size == 0)
+	{
+		return nullptr;
+	}
+
+	return this->PDF_Data;
+}
+
+size_t UPDFiumDoc::GetSize()
+{
+	return this->PDF_Data_Size;
 }
 
 bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*, FVector2D>& Out_Pages, int32 In_Sampling, FColor BG_Color, bool bUseSrgb, bool bUseMatrix, bool bUseAlpha, bool bRenderAnnots)
@@ -1201,7 +1240,7 @@ bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveT
 	return RetVal;
 }
 
-bool UPDFiumDoc::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
+bool UPDFiumDoc::PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
 	if (!IsValid(this->Manager))
 	{
@@ -1229,6 +1268,46 @@ bool UPDFiumDoc::PDFium_Save_Bytes(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes
 	UBytesObject_64* Temp_PDF = NewObject<UBytesObject_64>();
 	FMemory::Memcpy(Temp_PDF->ByteArray.GetData(), Buffer.GetData(), Buffer.Num());
 	Out_Bytes = Temp_PDF;
+
+	bool RetVal = SaveFactory->ConditionalBeginDestroy();
+	return RetVal;
+}
+
+bool UPDFiumDoc::PDFium_Save_Bytes_x86(TArray<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
+{
+	if (!IsValid(this->Manager))
+	{
+		return false;
+	}
+
+	if (!this->Manager->PDFium_LibState())
+	{
+		return false;
+	}
+
+	if (!this->Document)
+	{
+		return false;
+	}
+
+	UPDFiumSave* SaveFactory = NewObject<UPDFiumSave>();
+	TArray64<uint8> Buffer = SaveFactory->Callback_Save(this->Document, In_SaveType, In_Version);
+	const size_t BufferSize = Buffer.Num();
+
+	if (Buffer.IsEmpty())
+	{
+		return false;
+	}
+
+	if (BufferSize > INT32_MAX)
+	{
+		return false;
+	}
+
+	TArray<uint8> Temp_Output;
+	Temp_Output.SetNum(BufferSize);
+	FMemory::Memcpy(Temp_Output.GetData(), Buffer.GetData(), BufferSize);
+	Out_Bytes = Temp_Output;
 
 	bool RetVal = SaveFactory->ConditionalBeginDestroy();
 	return RetVal;
