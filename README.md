@@ -10,23 +10,21 @@ https://github.com/FF-Projects-UE/HTTP_Client
 https://github.com/FF-Projects-UE/ExtendedVars
 
 # TARGET PLATFORM
-* Plugin is for Unreal Engine 5.1 and up.
 * This is a "runtime" plugin. It won't work on editor.
-* It supports both Windows and Android.
+* It supports Windows and Android for target platform.
 
 # HELPER FUNCTIONS
-* Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in order to support this kind of large PDF loadings, we capsulated that array to an <b>BytesObject_32 and BytesObject_32 with Extended Variables plugin.</b>.
+* Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in order to support this kind of large PDFs, we use ByteObject64 from our <b>Extended Variables<b> plugin.</b>.
 
 # PDFIUM SYSTEM FUNCTIONS
-* <b>PDFium - LibInit / PDF_LibClose / PDF_LibState</b>: It will initialize, close and give state of PDFium library.
+* IsPDFiumIntialized
+* Create Document
+* Open PDF from file
+Open PDF from Memory
 
 # PDFIUM READ FUNCTIONS
-* <b>PDFium - File Open</b> : This will open PDF from given bytes.
-
 * <b>PDFium - PDFium Get Pages</b>: It will give a Map of (Key: Texture2D, Value: Width and Height) pages as textures.
-
 * <b>PDFium - PDFium Get All Texts</b>: It will get all texts of all pages.
-
 * <b>PDFium - PDFium Get Texts</b>: It will get all texts of <b>target page</b> with their styles.
 	* Transform (Location, size): Some editors use "1" point for font size and change text object's size with transform matrixes. So, if you want to re-create that PDF file with only font size, you will get very small textures.
 	* Font Size
@@ -40,22 +38,14 @@ https://github.com/FF-Projects-UE/ExtendedVars
 	* Sample math: (Cursor Location - PDF Location at screen) * Sampling (value which you used on Get Pages)
 
 * <b>PDFium Get Links</b>: It will give all "weblinks" in specified page. It won't give internal bridges. It will give weblinks. This is limitation of PDFium.
-
 * <b>PDFium Get Images</b>: It will extract all images as a TMap<UTexture2D, FVector2D (locations>. But images have to be <b>FPDF_PAGEOBJ_IMAGE</b>
-
 * <b>PDFium - Get Page Count and Sizes </b>: It will give an array of FVector2D. Lenght of array will be equal to page size, each elements contains size of documentation.
-
 * <b>PDFium- File Close</b>: It will close opened document.
 
 # PDFIUM WRITE FUNCTIONS
-* <b>PDFium - Create PDF</b>: It creates a new and empty PDF file.
-
 * <b>Add Pages</b>: It adds pages to target PDF file with defined size. (Array count is page count and each vector element of array is its size)
-
 * <b>PDFium - Load Standart Font</b>: There are 14 standart fonts embedded to PDF libraries according to PDF Spec 1.7 page 416. This function allows to select one them.
-
 * <b>PDFium - Load External Font</b>: You have to use <b>desktop fonts</b> not <b>web fonts</b>. For example, some Google Fonts (such as Google Variant of Roboto) don't work. You can download compatible fonts from here. https://all-free-download.com/font/ , https://www.fontspace.com/category/truetype , https://www.dafont.com/
-
 * <b>PDFium - Add Texts</b>: It adds text objects to target page. PDFium doesn't support line break at default but we integrated a parse system. So it has auto wrap feature. Neverthless, we suggest you that be careful about your layout (for example when will you create a line break or not)
 	* Text Color
 	* Position X = Horizontal position.
@@ -65,12 +55,9 @@ https://github.com/FF-Projects-UE/ExtendedVars
 	* Border X and Y = It defines vertical and horizontal borders.
 	* Use Charcodes: Frontend usage from blueprints are same but at backend it switches between ASCII Decimal based "FPDFText_SetCharcodes()" and "FPDFText_SetText()". Charcodes has better character support.
 
-* <b>PDFium - Draw Rectangle</b>: Add Image. It can add BGRA8 UTexture2D and UTextureRenderTarget2D to PDF file. Textures shouldn't be DXT variations.
-
+* <b>PDFium - Add Image</b>: It can add BGRA8 UTexture2D and UTextureRenderTarget2D to PDF file. Textures shouldn't be DXT variations.
 * <b>PDFium - Draw Rectangle</b>: It will draw a rectangle on PDF file with given location, size and color.
-
 * <b>PDFium - Save File</b>: You need to spawn <b>PDFium_Save</b> actor class to save your PDF files. If you need to save multiple PDF files at the same time, you need to spawn that actor for each of them.
-
 * <b>PDFium - Save Bytes</b>: You need to spawn <b>PDFium_Save</b> actor class to save your PDF as bytes. If you need to save multiple PDF at the same time, you need to spawn that actor for each of them.
 
 # PDFIUM HINTS
@@ -85,4 +72,4 @@ https://github.com/FF-Projects-UE/ExtendedVars
 * PDFium - Rotation functions.
 
 # LIMITATION
-* Some external web fonts cause crash. So, it would be good to test your fonts at development stage and give them to your customers.
+* Some external web fonts can cause crash. So, it would be good to test your fonts at development stage and give them to your customers.
