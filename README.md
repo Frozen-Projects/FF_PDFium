@@ -1,5 +1,5 @@
 # DEPENDENCIES
-1. Windows and Android Binaries<br />
+1. PDFium Precompiled Binaries for various platforms (we use non-v8)<br />
 https://github.com/bblanchon/pdfium-binaries
 
 2. In order to view online PDF files, you have to use a HTTP Client plugin. You can use ours or get one from Github/Unreal Marketplace or write your own.<br />
