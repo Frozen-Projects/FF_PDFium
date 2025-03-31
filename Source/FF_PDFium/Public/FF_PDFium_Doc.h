@@ -5,7 +5,7 @@
 
 #include "FF_PDFium_Doc.generated.h"
 
-class AFF_PDFium_Manager;
+class UFF_PDFium_ManagerSubsystem;
 class UPDFiumFont;
 
 UDELEGATE(BlueprintAuthorityOnly)
@@ -61,7 +61,7 @@ private:
 	void* PDF_Data = nullptr;
 	size_t PDF_Data_Size = 0;
 
-	AFF_PDFium_Manager* Manager = nullptr;
+	UFF_PDFium_ManagerSubsystem* Manager = nullptr;
 
 	virtual TArray64<uint8> SaveBytes64(bool& bIsSaveSuccessful, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version);
 	virtual TArray<uint8> SaveBytes(bool& bIsSaveSuccessful, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version);
@@ -76,8 +76,8 @@ public:
 
 	FPDF_DOCUMENT Document = NULL;
 
-	virtual bool SetManager(AFF_PDFium_Manager* In_Manager);
-	virtual AFF_PDFium_Manager* GetManager();
+	virtual bool SetManager(UFF_PDFium_ManagerSubsystem* In_Manager);
+	virtual UFF_PDFium_ManagerSubsystem* GetManager();
 	virtual bool SetBuffer(const size_t Size, void* Data);
 	virtual void* GetBuffer();
 	virtual size_t GetSize();

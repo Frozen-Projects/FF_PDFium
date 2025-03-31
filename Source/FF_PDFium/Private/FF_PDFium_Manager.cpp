@@ -5,82 +5,46 @@
 // Custom Includes.
 #include "FF_PDFium_Doc.h"
 
-// Sets default values.
-AFF_PDFium_Manager::AFF_PDFium_Manager()
+void UFF_PDFium_ManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-}
+	Super::Initialize(Collection);
 
-// Called when the game starts or when spawned.
-void AFF_PDFium_Manager::BeginPlay()
-{
-	Super::BeginPlay();
-
-	FString Out_Code;
-
-	if (!this->PDFium_LibInit(Out_Code))
+	if (this->bIsLibInitialized)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *Out_Code);
-	}
-}
-
-// Called when the game ends or when destroyed.
-void AFF_PDFium_Manager::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	this->PDFium_LibClose();
-	Super::EndPlay(EndPlayReason);
-}
-
-// Called every frame.
-void AFF_PDFium_Manager::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-}
-
-bool AFF_PDFium_Manager::PDFium_LibState()
-{
-	return this->bIsPdfiumStarted;
-}
-
-bool AFF_PDFium_Manager::PDFium_LibInit(FString& Out_Code)
-{
-	if (this->bIsPdfiumStarted)
-	{
-		Out_Code = "Library already initialized.";
-		return false;
+		return;
 	}
 
 	try
 	{
-		FMemory::Memset(&this->config, 0, sizeof(this->config));
-		this->config.version = 2;
-		this->config.m_pUserFontPaths = NULL;
-		this->config.m_pIsolate = NULL;
-		this->config.m_v8EmbedderSlot = 0;
-		FPDF_InitLibraryWithConfig(&this->config);
+		FMemory::Memset(&Config, 0, sizeof(Config));
+		Config.version = 2;
+		Config.m_pUserFontPaths = nullptr;
+		Config.m_pIsolate = nullptr;
+		Config.m_v8EmbedderSlot = 0;
 
-		Out_Code = "Library successfully initialized.";
-		this->bIsPdfiumStarted = true;
-
-		return true;
+		FPDF_InitLibraryWithConfig(&Config);
+		this->bIsLibInitialized = true;
 	}
 
 	catch (const std::exception& Exception)
 	{
-		Out_Code = Exception.what();
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *FString(Exception.what()));
 	}
 }
 
-void AFF_PDFium_Manager::PDFium_LibClose()
+void UFF_PDFium_ManagerSubsystem::Deinitialize()
 {
+	Super::Deinitialize();
+
+	if (!this->bIsLibInitialized)
+	{
+		return;
+	}
+
 	if (!this->Array_PDFs.IsEmpty())
 	{
-		for (int32 Index_PDFs = 0; Index_PDFs < this->Array_PDFs.Num(); Index_PDFs++)
+		for (UPDFiumDoc* EachDoc : this->Array_PDFs)
 		{
-			UPDFiumDoc* EachDoc = this->Array_PDFs[Index_PDFs];
-
 			if (IsValid(EachDoc))
 			{
 				EachDoc->ConditionalBeginDestroy();
@@ -91,12 +55,17 @@ void AFF_PDFium_Manager::PDFium_LibClose()
 	}
 
 	FPDF_DestroyLibrary();
-	this->bIsPdfiumStarted = false;
+	this->bIsLibInitialized = false;
 }
 
-bool AFF_PDFium_Manager::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password)
+bool UFF_PDFium_ManagerSubsystem::IsPDFiumInitialized() const
 {
-	if (!this->bIsPdfiumStarted)
+	return this->bIsLibInitialized;
+}
+
+bool UFF_PDFium_ManagerSubsystem::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password)
+{
+	if (!this->bIsLibInitialized)
 	{
 		return false;
 	}
@@ -137,9 +106,9 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& Err
 	return true;
 }
 
-bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password)
+bool UFF_PDFium_ManagerSubsystem::PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password)
 {
-	if (!this->bIsPdfiumStarted)
+	if (!this->bIsLibInitialized)
 	{
 		return false;
 	}
@@ -157,9 +126,9 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FStrin
 	}
 
 	const size_t PDF_Data_Size = In_Bytes_Object->ByteArray.Num();
-	
+
 	UPDFiumDoc* TempObject = NewObject<UPDFiumDoc>();
-	
+
 	if (!TempObject->SetBuffer(PDF_Data_Size, In_Bytes_Object->ByteArray.GetData()))
 	{
 		TempObject->ConditionalBeginDestroy();
@@ -177,7 +146,7 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FStrin
 	}
 
 	FPDF_LoadXFA(Temp_Document);
-	
+
 	TempObject->Document = Temp_Document;
 	TempObject->SetManager(this);
 	this->Array_PDFs.Add(TempObject);
@@ -188,9 +157,9 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FStrin
 	return true;
 }
 
-bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FString& ErrorCode, TArray<uint8> In_Bytes, FString In_PDF_Password)
+bool UFF_PDFium_ManagerSubsystem::PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FString& ErrorCode, TArray<uint8> In_Bytes, FString In_PDF_Password)
 {
-	if (!this->bIsPdfiumStarted)
+	if (!this->bIsLibInitialized)
 	{
 		return false;
 	}
@@ -231,9 +200,9 @@ bool AFF_PDFium_Manager::PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FStrin
 	return true;
 }
 
-bool AFF_PDFium_Manager::PDFium_Create_Doc(UPDFiumDoc*& Out_PDF)
+bool UFF_PDFium_ManagerSubsystem::PDFium_Create_Doc(UPDFiumDoc*& Out_PDF)
 {
-	if (!this->bIsPdfiumStarted)
+	if (!this->bIsLibInitialized)
 	{
 		return false;
 	}

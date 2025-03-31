@@ -13,53 +13,35 @@
 class UPDFiumDoc;
 
 UCLASS()
-class FF_PDFIUM_API AFF_PDFium_Manager : public AActor
+class FF_PDFIUM_API UFF_PDFium_ManagerSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
-private:
-
-	FPDF_LIBRARY_CONFIG config;
-	bool bIsPdfiumStarted = false;
-
 protected:
 
-	// Called when the game starts or when spawned.
-	virtual void BeginPlay() override;
-
-	// Called when the game ends or when destroyed.
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-public:	
-
-	UPROPERTY()
+	FPDF_LIBRARY_CONFIG Config;
+	bool bIsLibInitialized = false;
+	
+	// We have to store all created PDF documents because closing them before library destroy is our responsibility.
 	TArray<UPDFiumDoc*> Array_PDFs;
 
-	// Sets default values for this actor's properties.
-	AFF_PDFium_Manager();
+public:
 
-	// Called every frame.
-	virtual void Tick(float DeltaTime) override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
-	UFUNCTION(BlueprintPure, meta = (DisplayName = "PDFium - Library State", ToolTip = "", Keywords = "pdfium, pdf, document, library, state, get, is, initialized"), Category = "PDFium|System")
-	virtual bool PDFium_LibState();
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "PDFium - Is Initialized", ToolTip = "", Keywords = "pdfium, pdf, document, library, lib, is, initialized"), Category = "Frozen Forest|FF_PDFium|System")
+	bool IsPDFiumInitialized() const;
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Library Init", Keywords = "pdfium, pdf, document, library, lib, open, init"), Category = "PDFium|System")
-	virtual bool PDFium_LibInit(FString& Out_Code);
-
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Library Close", Keywords = "pdfium, pdf, document, library, lib, close"), Category = "PDFium|System")
-	virtual void PDFium_LibClose();
-
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from File", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, file"), Category = "PDFium|Read")
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from File", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, file"), Category = "Frozen Forest|FF_PDFium|System")
 	virtual bool PDFium_Doc_Open_File(UPDFiumDoc*& Out_PDF, FString& ErrorCode, FString In_Path, FString In_PDF_Password);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from Memory x64", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, memory"), Category = "PDFium|Read")
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from Memory x64", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, memory"), Category = "Frozen Forest|FF_PDFium|System")
 	virtual bool PDFium_Doc_Open_Memory_x64(UPDFiumDoc*& Out_PDF, FString& ErrorCode, UPARAM(ref)UBytesObject_64*& In_Bytes_Object, FString In_PDF_Password);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from Memory x86", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, memory"), Category = "PDFium|Read")
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Open Document from Memory x86", ToolTip = "", Keywords = "pdfium, pdf, document, read, open, import, memory"), Category = "Frozen Forest|FF_PDFium|System")
 	virtual bool PDFium_Doc_Open_Memory_x86(UPDFiumDoc*& Out_PDF, FString& ErrorCode, TArray<uint8> In_Bytes, FString In_PDF_Password);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Create Document", ToolTip = "", Keywords = "pdfium, pdf, create, doc, document, pdf"), Category = "PDFium|Write")
 	virtual bool PDFium_Create_Doc(UPDFiumDoc*& Out_PDF);
-
 };

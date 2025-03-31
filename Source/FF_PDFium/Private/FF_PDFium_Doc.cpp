@@ -160,7 +160,7 @@ void UPDFiumDoc::BeginDestroy()
 	Super::BeginDestroy();
 }
 
-bool UPDFiumDoc::SetManager(AFF_PDFium_Manager* In_Manager)
+bool UPDFiumDoc::SetManager(UFF_PDFium_ManagerSubsystem* In_Manager)
 {
 	if (!IsValid(In_Manager))
 	{
@@ -171,7 +171,7 @@ bool UPDFiumDoc::SetManager(AFF_PDFium_Manager* In_Manager)
 	return true;
 }
 
-AFF_PDFium_Manager* UPDFiumDoc::GetManager()
+UFF_PDFium_ManagerSubsystem* UPDFiumDoc::GetManager()
 {
 	return this->Manager;
 }
@@ -228,7 +228,7 @@ bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		TempCode.JsonObject->SetStringField("Description", "PDFium has not been initialized.");
 		return false;
@@ -360,7 +360,7 @@ bool UPDFiumDoc::PDFium_Get_Images(TMap<UTexture2D*, FVector2D>& Out_Images, int
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -423,7 +423,7 @@ bool UPDFiumDoc::PDFium_Get_All_Texts(TArray<FString>& Out_Texts)
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -463,7 +463,7 @@ bool UPDFiumDoc::PDFium_Get_Texts(TArray<FPdfTextObject>& Out_Texts, int32 PageI
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -560,7 +560,7 @@ bool UPDFiumDoc::PDFium_Get_Links(TArray<FString>& Out_Links, int32 PageIndex)
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -613,7 +613,7 @@ bool UPDFiumDoc::PDFium_Select_Text(FString& Out_Text, FVector2D Start, FVector2
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -651,7 +651,7 @@ bool UPDFiumDoc::PDFium_Pages_Counts_Sizes(TArray<FVector2D>& Out_Infos)
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -683,7 +683,7 @@ bool UPDFiumDoc::PDFium_Pages_Add(TArray<FVector2D> Pages)
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -713,7 +713,7 @@ bool UPDFiumDoc::PDFium_Pages_Delete(int32 PageIndex)
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -743,7 +743,7 @@ bool UPDFiumDoc::PDFium_Font_Load_Standart(UPDFiumFont*& Out_Font, EStandartFont
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -824,7 +824,7 @@ bool UPDFiumDoc::PDFium_Font_Load_External(UPDFiumFont*& Out_Font, FString Font_
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -886,7 +886,7 @@ void UPDFiumDoc::PDFium_Add_Texts(FDelegatePdfium DelegateAddObject, UPARAM(ref)
 		DelegateAddObject.Execute(false, "PDFium manager is not valid.");
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		DelegateAddObject.Execute(false, "PDFium Library haven't been initialized.");
 	}
@@ -1062,7 +1062,7 @@ bool UPDFiumDoc::PDFium_Draw_Rectangle(FVector2D Position, FVector2D Anchor, FVe
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -1108,7 +1108,7 @@ bool UPDFiumDoc::PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVe
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -1257,7 +1257,7 @@ void UPDFiumDoc::PDFium_Save_File(FDelegatePdfium DelegateSave, FString Export_P
 		return;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		DelegateSave.ExecuteIfBound(false, "PDFium Library haven't been initialized.");
 		return;
@@ -1322,7 +1322,7 @@ bool UPDFiumDoc::PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveT
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
@@ -1355,7 +1355,7 @@ bool UPDFiumDoc::PDFium_Save_Bytes_x86(TArray<uint8>& Out_Bytes, EPDFiumSaveType
 		return false;
 	}
 
-	if (!this->Manager->PDFium_LibState())
+	if (!this->Manager->IsPDFiumInitialized())
 	{
 		return false;
 	}
