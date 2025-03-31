@@ -5,7 +5,7 @@ https://github.com/bblanchon/pdfium-binaries
 2. In order to view online PDF files, you have to use a HTTP Client plugin. You can use ours or get one from Github/Unreal Marketplace or write your own.<br />
 https://github.com/FF-Projects-UE/HTTP_Client
 
-3. Extended Variables for bytes and font related functions<br />
+3. <b>Extended Variables</b> for x64 bytes and external fonts<br />
 https://github.com/FF-Projects-UE/ExtendedVars
 
 # TARGET PLATFORM
