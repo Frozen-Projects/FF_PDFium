@@ -4,9 +4,10 @@
 #include "FF_PDFium_Manager.h"
 #include "FF_PDFium_Font.h"
 
-FPDF_BOOL UPDFiumDoc::SaveBytes64(TArray64<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
+TArray64<uint8> UPDFiumDoc::SaveBytes64(bool& bIsSaveSuccessful, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
 	thread_local TArray64<uint8> ThreadLocalPDFBytes;
+	ThreadLocalPDFBytes.Reset();
 
 	auto Callback_Writer = [](FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)->int
 		{
@@ -60,16 +61,18 @@ FPDF_BOOL UPDFiumDoc::SaveBytes64(TArray64<uint8>& Out_Bytes, EPDFiumSaveTypes I
 
 	if (ThreadLocalPDFBytes.IsEmpty() || RetVal != 1)
 	{
-		return false;
+		bIsSaveSuccessful = false;
+		return TArray64<uint8>();
 	}
 
-	Out_Bytes = ThreadLocalPDFBytes;
-	return RetVal;
+	bIsSaveSuccessful = true;
+	return MoveTemp(ThreadLocalPDFBytes);
 }
 
-FPDF_BOOL UPDFiumDoc::SaveBytes(TArray<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
+TArray<uint8> UPDFiumDoc::SaveBytes(bool& bIsSaveSuccessful, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
 	thread_local TArray<uint8> ThreadLocalPDFBytes;
+	ThreadLocalPDFBytes.Reset();
 
 	auto Callback_Writer = [](FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)->int
 		{
@@ -121,13 +124,14 @@ FPDF_BOOL UPDFiumDoc::SaveBytes(TArray<uint8>& Out_Bytes, EPDFiumSaveTypes In_Sa
 
 	FPDF_BOOL RetVal = FPDF_SaveWithVersion(this->Document, &Writer, Flags, Version);
 
-	if (ThreadLocalPDFBytes.IsEmpty() || RetVal != 1)
+	if (ThreadLocalPDFBytes.IsEmpty() || !RetVal)
 	{
-		return false;
+		bIsSaveSuccessful = false;
+		return TArray<uint8>();
 	}
 
-	Out_Bytes = ThreadLocalPDFBytes;
-	return RetVal;
+	bIsSaveSuccessful = true;
+	return ThreadLocalPDFBytes;
 }
 
 void UPDFiumDoc::BeginDestroy()
@@ -1245,37 +1249,70 @@ bool UPDFiumDoc::PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVe
 	return true;
 }
 
-bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
+void UPDFiumDoc::PDFium_Save_File(FDelegatePdfium DelegateSave, FString Export_Path, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
 	if (!IsValid(this->Manager))
 	{
-		return false;
+		DelegateSave.ExecuteIfBound(false, "PDFium manager is not valid.");
+		return;
 	}
 
 	if (!this->Manager->PDFium_LibState())
 	{
-		return false;
+		DelegateSave.ExecuteIfBound(false, "PDFium Library haven't been initialized.");
+		return;
 	}
 
 	if (!this->Document)
 	{
-		return false;
+		DelegateSave.ExecuteIfBound(false, "PDF document is not valid.");
+		return;
 	}
 
-	if (Export_Path.IsEmpty())
+	FString TempPath = Export_Path;
+	FPaths::MakeStandardFilename(TempPath);
+
+	if (TempPath.IsEmpty())
 	{
-		return false;
+		DelegateSave.ExecuteIfBound(false, "Export path is empty.");
+		return;
 	}
 
-	TArray64<uint8> PDF_Bytes;
-	FPDF_BOOL RetVal = this->SaveBytes64(PDF_Bytes, In_SaveType, In_Version);
+	const FString Directory = FPaths::GetPath(TempPath);
 
-	if (!RetVal || PDF_Bytes.IsEmpty())
+	if (!FPaths::DirectoryExists(Directory))
 	{
-		return false;
+		DelegateSave.ExecuteIfBound(false, "Export directory doesn't exist.");
+		return;
 	}
 
-	return FFileHelper::SaveArrayToFile(PDF_Bytes, *Export_Path);
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [this, DelegateSave, In_SaveType, In_Version, TempPath]()
+		{
+			bool bSaveSucceeded = false;
+			TArray64<uint8> PDF_Bytes = this->SaveBytes64(bSaveSucceeded, In_SaveType, In_Version);
+
+			if (!bSaveSucceeded || PDF_Bytes.IsEmpty())
+			{
+				PDF_Bytes.Reset();
+
+				AsyncTask(ENamedThreads::GameThread, [DelegateSave]()
+					{
+						DelegateSave.ExecuteIfBound(false, "PDF save is not successful.");
+					}
+				);
+
+				return;
+			}
+			
+			bSaveSucceeded = FFileHelper::SaveArrayToFile(MoveTemp(PDF_Bytes), *TempPath);
+
+			AsyncTask(ENamedThreads::GameThread, [DelegateSave, bSaveSucceeded, TempPath]()
+				{
+					DelegateSave.ExecuteIfBound(bSaveSucceeded, bSaveSucceeded ? "PDF file saved successfully to " + TempPath : "PDF file save is not successful.");
+				}
+			);
+		}
+	);
 }
 
 bool UPDFiumDoc::PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
@@ -1295,17 +1332,18 @@ bool UPDFiumDoc::PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveT
 		return false;
 	}
 
-	TArray64<uint8> PDF_Bytes;
-	FPDF_BOOL RetVal = this->SaveBytes64(PDF_Bytes, In_SaveType, In_Version);
+	bool bIsSaveSuccessful = false;
+	TArray64<uint8> PDF_Bytes = this->SaveBytes64(bIsSaveSuccessful, In_SaveType, In_Version);
 
-	if (!RetVal || PDF_Bytes.IsEmpty())
+	if (!bIsSaveSuccessful || PDF_Bytes.IsEmpty())
 	{
+		PDF_Bytes.Reset();
 		return false;
 	}
 
 	Out_Bytes = NewObject<UBytesObject_64>();
-	Out_Bytes->ByteArray.SetNum(PDF_Bytes.Num());
-	FMemory::Memcpy(Out_Bytes->ByteArray.GetData(), PDF_Bytes.GetData(), PDF_Bytes.Num());
+	Out_Bytes->ByteArray = MoveTemp(PDF_Bytes);
+	PDF_Bytes.Reset();
 
 	return true;
 }
@@ -1327,17 +1365,18 @@ bool UPDFiumDoc::PDFium_Save_Bytes_x86(TArray<uint8>& Out_Bytes, EPDFiumSaveType
 		return false;
 	}
 
-	TArray<uint8> PDF_Bytes;
-	FPDF_BOOL RetVal = this->SaveBytes(PDF_Bytes, In_SaveType, In_Version);
+	bool bIsSaveSuccessful = false;
+	TArray<uint8> PDF_Bytes = this->SaveBytes(bIsSaveSuccessful, In_SaveType, In_Version);
 
-	if (!RetVal || PDF_Bytes.IsEmpty())
+	if (!bIsSaveSuccessful || PDF_Bytes.IsEmpty())
 	{
+		PDF_Bytes.Reset();
 		return false;
 	}
 
-	Out_Bytes.Empty();
-	Out_Bytes.SetNum(PDF_Bytes.Num());
-	FMemory::Memcpy(Out_Bytes.GetData(), PDF_Bytes.GetData(), PDF_Bytes.Num());
+	Out_Bytes.Reset();
+	Out_Bytes = MoveTemp(PDF_Bytes);
+	PDF_Bytes.Reset();
 	
 	return true;
 }

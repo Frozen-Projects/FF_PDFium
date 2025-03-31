@@ -63,8 +63,8 @@ private:
 
 	AFF_PDFium_Manager* Manager = nullptr;
 
-	virtual FPDF_BOOL SaveBytes64(TArray64<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version);
-	virtual FPDF_BOOL SaveBytes(TArray<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version);
+	virtual TArray64<uint8> SaveBytes64(bool& bIsSaveSuccessful, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version);
+	virtual TArray<uint8> SaveBytes(bool& bIsSaveSuccessful, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version);
 
 public:
 
@@ -137,7 +137,7 @@ public:
 	virtual bool PDFium_Add_Image(FString& Out_Code, TArray<uint8> In_Bytes, FVector2D In_Size, FVector2D Position, FVector2D Rotation, int32 PageIndex = 0);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Save File", ToolTip = "", Keywords = "pdfium, pdf, doc, document, save, file"), Category = "Frozen Forest|FF_PDFium|Write")
-	virtual bool PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
+	virtual void PDFium_Save_File(FDelegatePdfium DelegateSave, FString Export_Path, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "PDFium - Save Bytes x64", ToolTip = "", Keywords = "pdfium, pdf, doc, document, save, bytes"), Category = "Frozen Forest|FF_PDFium|Write")
 	virtual bool PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType = EPDFiumSaveTypes::Incremental, EPDFiumSaveVersion In_Version = EPDFiumSaveVersion::PDF_17);
