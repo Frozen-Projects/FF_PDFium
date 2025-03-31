@@ -1,26 +1,24 @@
-# USED LIBRARIES
-Windows and Android Binaries<br />
+# DEPENDENCIES
+1- Windows and Android Binaries<br />
 https://github.com/bblanchon/pdfium-binaries
 
-# DEPENDENCIES
-1- In order to view online PDF files, you have to use a HTTP Client plugin. You can use ours or get one from Github/Unreal Marketplace or write your own.<br />
+2- In order to view online PDF files, you have to use a HTTP Client plugin. You can use ours or get one from Github/Unreal Marketplace or write your own.<br />
 https://github.com/FF-Projects-UE/HTTP_Client
 
-2- Extended Variables for bytes and font related functions<br />
+3- Extended Variables for bytes and font related functions<br />
 https://github.com/FF-Projects-UE/ExtendedVars
 
 # TARGET PLATFORM
-* This is a "runtime" plugin. It won't work on editor.
-* It supports Windows and Android for target platform.
+This is a "runtime" plugin. It won't work on editor. It supports Windows and Android platforms as target.
 
 # HELPER FUNCTIONS
-* Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in order to support this kind of large PDFs, we use ByteObject64 from our Extended Variables plugin..
+Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in order to support this kind of large PDFs, we use ByteObject64 from our Extended Variables plugin..
 
 # PDFIUM SYSTEM FUNCTIONS
 * IsPDFiumIntialized
 * Create Document
 * Open PDF from file
-Open PDF from Memory
+* Open PDF from Memory
 
 # PDFIUM READ FUNCTIONS
 * <b>PDFium - PDFium Get Pages</b>: It will give a Map of (Key: Texture2D, Value: Width and Height) pages as textures.
@@ -37,8 +35,8 @@ Open PDF from Memory
 	* Don't use your cursor location directly.
 	* Sample math: (Cursor Location - PDF Location at screen) * Sampling (value which you used on Get Pages)
 
-* <b>PDFium - Get Links</b>: It will give all "weblinks" in specified page. It won't give internal bridges. It will give weblinks. This is limitation of PDFium.
-* <b>PDFium - Get Images</b>: It will extract all images as a TMap<UTexture2D, FVector2D (locations>. But images have to be FPDF_PAGEOBJ_IMAGE
+* <b>PDFium - Get Links</b>: It will give all <b>weblinks</b> in specified page. It won't give internal bridges. It will give weblinks. This is limitation of PDFium.
+* <b>PDFium - Get Images</b>: It will extract all images as a TMap<UTexture2D, FVector2D (locations>. But images have to be ``FPDF_PAGEOBJ_IMAGE``
 * <b>PDFium - Get Page Count and Sizes</b>: It will give an array of FVector2D. Lenght of array will be equal to page size, each elements contains size of documentation.
 * <b>PDFium - File Close</b>: It will close opened document.
 
@@ -60,16 +58,14 @@ Open PDF from Memory
 * <b>PDFium - Save File</b>: You need to spawn PDFium_Save actor class to save your PDF files. If you need to save multiple PDF files at the same time, you need to spawn that actor for each of them.
 * <b>PDFium - Save Bytes</b>: You need to spawn PDFium_Save actor class to save your PDF as bytes. If you need to save multiple PDF at the same time, you need to spawn that actor for each of them.
 
-# PDFIUM HINTS
-* Do NOT close PDF document unless you absolutely sure that you won't use it anymore.
-* When you close your game or finish your job with that document, close that PDF document.
-
-# GENERAL HINTS
-* if you want to "view" changes which you did on your newly created PDF file in UE5, you need to render it "again" and assign it to your widget or material.
+# INSTRUCTIONS
 * Look at plugin's content folder. There are example blueprints to show you how can you use this plugin.
+* You have to PDFium Subsystem to Create and Open PDF files.
+* Do NOT manually invalidate or set empty document objects !
+* If you want to "view" changes which you did on your newly created PDF file in UE5, you need to render it "again" and assign it to your widget or material.
 
-# ROADMAP (DO NOT USE THEM UNTIL WE REMOVE THEM FROM ROADMAP SECTION !)
-* PDFium - Rotation functions.
+# ROADMAP
+* <b>Rotation inputs</b>: Inputs are connected to internal functions but PDFium use a somekind of rotation matrix. So, use it if you know what you are doing. We will create a helper function about this.
 
 # LIMITATION
-* Some external web fonts can cause crash. So, it would be good to test your fonts at development stage and give them to your customers.
+* Some external web fonts can cause crash. So, it will be good to test your fonts at development stage and give them to your customers.
