@@ -9,7 +9,7 @@ https://github.com/FF-Projects-UE/HTTP_Client
 https://github.com/FF-Projects-UE/ExtendedVars
 
 # TARGET PLATFORM
-This is a "runtime" plugin. It won't work on editor. It supports Windows and Android platforms as target.
+This is a <b>runtime</b> plugin. It won't work on editor. It supports Windows and Android platforms as target.
 
 # HELPER FUNCTIONS
 Unreal blueprints doesn't support ``TArray64<uint8>`` and ``TArray<uint8>`` doesn't support more than 2 GB file size. So, if you want to bigger PDF files than 2 GB, you have to use ``BytesObject_x64`` from our ``Extended Variables`` plugin.< /br>
