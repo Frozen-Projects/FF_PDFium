@@ -34,25 +34,24 @@ Add image function expects images as bytes array. You can use our ``Extended Var
 * <b>PDFium - Select Text</b>: You can think this as a somekind of text selection. It will get text/strings in a rectangle area.
 	* You have to define that rectangle's size and location according with PDF's size and location.
 	* Don't use your cursor location directly.
-	* Sample math: (Cursor Location - PDF Location at screen) * Sampling (value which you used on Get Pages)
+	* ``Sample math: (Cursor Location - PDF Location at screen) * Sampling (value which you used on Get Pages)``
 
 * <b>PDFium - Get Links</b>: It will give all <b>weblinks</b> in specified page. It won't give internal bridges. It will give weblinks. This is limitation of PDFium.
-* <b>PDFium - Get Images</b>: It will extract all images as a TMap<UTexture2D, FVector2D (locations>. But images have to be ``FPDF_PAGEOBJ_IMAGE``
-* <b>PDFium - Get Page Count and Sizes</b>: It will give an array of FVector2D. Lenght of array will be equal to page size, each elements contains size of documentation.
-* <b>PDFium - File Close</b>: It will close opened document.
+* <b>PDFium - Get Images</b>: It will extract all images as a ``TMap<UTexture2D, FVector2D> (FVector2D is images location)``. But images of PDF have to be ``FPDF_PAGEOBJ_IMAGE``
+* <b>PDFium - Get Page Count and Sizes</b>: It will give an array of ``FVector2D``. Lenght of array will be equal to page size, each elements contains size of its respective page.
 
 # PDFIUM WRITE FUNCTIONS
 * <b>PDFium - Add Pages</b>: It adds pages to target PDF file with defined size. (Array count is page count and each vector element of array is its size)
-* <b>PDFium - Load Standart Font</b>: There are 14 standart fonts embedded to PDF libraries according to PDF Spec 1.7 page 416. This function allows to select one them.
-* <b>PDFium - Load External Font</b>: You have to use desktop fonts not web fonts. For example, some Google Fonts (such as Google Variant of Roboto) don't work. You can download compatible fonts from here. https://all-free-download.com/font/ , https://www.fontspace.com/category/truetype , https://www.dafont.com/
-* <b>PDFium - Add Texts</b>: It adds text objects to target page. PDFium doesn't support line break at default but we integrated a parse system. So it has auto wrap feature. Neverthless, we suggest you that be careful about your layout (for example when will you create a line break or not)
+* <b>PDFium - Load Standart Font</b>: There are 14 standart fonts embedded to PDF libraries according to ``PDF Spec 1.7 page 416``. This function allows to select one them.
+* <b>PDFium - Load External Font</b>: You have to use desktop fonts not web fonts. For example, some <b>Google Fonts (such as Google Variant of Roboto) don't work</b>.< /br> You can download compatible fonts from these websites. < /br> https://all-free-download.com/font/ < /br> https://www.fontspace.com/category/truetype < /br> https://www.dafont.com/
+* <b>PDFium - Add Texts</b>: It adds text objects to target page. PDFium doesn't support line break at default but we integrated a basic auto wrap feature. Neverthless, you need to be careful about your layout. (When will you create a line break or not)
 	* Text Color
 	* Position X = Horizontal position.
 	* Position Y = Vertical position but it starts from bottom. If your PDF page's height is 800 pixel, top will be 800 and bottom will be 0.
 	* Shear X and Y = It strecth your text object. Scaling won't be vectoral. So we don't suggest it.
 	* Rotation X and Y = We don't know how it works right now.
 	* Border X and Y = It defines vertical and horizontal borders.
-	* Use Charcodes: Frontend usage from blueprints are same but at backend it switches between ASCII Decimal based "FPDFText_SetCharcodes()" and "FPDFText_SetText()". Charcodes has better character support.
+	* Use Charcodes: Frontend usage from blueprints are same but at backend it switches between ASCII Decimal based ``FPDFText_SetCharcodes()`` and ``FPDFText_SetText()``. Charcodes has better character support.
 
 * <b>PDFium - Add Image</b>: It expects byte array.
 * <b>PDFium - Draw Rectangle</b>: It will draw a rectangle on PDF file with given location, size and color.
