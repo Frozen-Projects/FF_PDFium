@@ -23,7 +23,7 @@ https://github.com/FF-Projects-UE/ExtendedVars
 Open PDF from Memory
 
 # PDFIUM READ FUNCTIONS
-* PDFium - PDFium Get Pages: It will give a Map of (Key: Texture2D, Value: Width and Height) pages as textures.
+* <b>PDFium - PDFium Get Pages</b>: It will give a Map of (Key: Texture2D, Value: Width and Height) pages as textures.
 * PDFium - PDFium Get All Texts: It will get all texts of all pages.
 * PDFium - PDFium Get Texts: It will get all texts of target page with their styles.
 	* Transform (Location, size): Some editors use "1" point for font size and change text object's size with transform matrixes. So, if you want to re-create that PDF file with only font size, you will get very small textures.
