@@ -4,30 +4,15 @@
 #include "FF_PDFium_Manager.h"
 #include "FF_PDFium_Font.h"
 
-#pragma region SAVE_SYSTEM
-
-TArray64<uint8> UPDFiumSave::PDF_Bytes;
-
-void UPDFiumSave::BeginDestroy()
+FPDF_BOOL UPDFiumDoc::SaveBytes64(TArray64<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
 {
-	PDF_Bytes.Empty();
-	Super::BeginDestroy();
-}
-
-TArray64<uint8> UPDFiumSave::Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
-{
-	if (!In_Document)
-	{
-		return TArray64<uint8>();
-	}
+	thread_local TArray64<uint8> ThreadLocalPDFBytes;
 
 	auto Callback_Writer = [](FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)->int
 		{
-			PDF_Bytes.Append(static_cast<const uint8*>(pData), size);
+			ThreadLocalPDFBytes.Append(static_cast<const uint8*>(pData), size);
 			return size;
 		};
-
-	PDF_Bytes.Empty();
 
 	FPDF_FILEWRITE Writer;
 	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
@@ -71,17 +56,79 @@ TArray64<uint8> UPDFiumSave::Callback_Save(FPDF_DOCUMENT In_Document, EPDFiumSav
 			break;
 	}
 
-	FPDF_BOOL RetVal = FPDF_SaveWithVersion(In_Document, &Writer, Flags, Version);
+	FPDF_BOOL RetVal = FPDF_SaveWithVersion(this->Document, &Writer, Flags, Version);
 
-	if (PDF_Bytes.IsEmpty() || RetVal != 1)
+	if (ThreadLocalPDFBytes.IsEmpty() || RetVal != 1)
 	{
-		return TArray64<uint8>();
+		return false;
 	}
 
-	return PDF_Bytes;
+	Out_Bytes = ThreadLocalPDFBytes;
+	return RetVal;
 }
 
-#pragma endregion SAVE_SYSTEM
+FPDF_BOOL UPDFiumDoc::SaveBytes(TArray<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
+{
+	thread_local TArray<uint8> ThreadLocalPDFBytes;
+
+	auto Callback_Writer = [](FPDF_FILEWRITE* pThis, const void* pData, unsigned long size)->int
+		{
+			ThreadLocalPDFBytes.Append(static_cast<const uint8*>(pData), size);
+			return size;
+		};
+
+	FPDF_FILEWRITE Writer;
+	memset(&Writer, 0, sizeof(FPDF_FILEWRITE));
+	Writer.WriteBlock = Callback_Writer;
+	Writer.version = 1;
+
+	int Flags = FPDF_INCREMENTAL;
+	switch (In_SaveType)
+	{
+		case EPDFiumSaveTypes::Incremental:
+			Flags = FPDF_INCREMENTAL;
+			break;
+
+		case EPDFiumSaveTypes::NoIncremental:
+			Flags = FPDF_NO_INCREMENTAL;
+			break;
+
+		case EPDFiumSaveTypes::RemoveSecurity:
+			Flags = FPDF_REMOVE_SECURITY;
+			break;
+
+		default:
+			Flags = FPDF_INCREMENTAL;
+			break;
+	}
+
+	int Version = 17;
+	switch (In_Version)
+	{
+		case EPDFiumSaveVersion::PDF_14:
+			Version = 14;
+			break;
+		case EPDFiumSaveVersion::PDF_15:
+			Version = 15;
+			break;
+		case EPDFiumSaveVersion::PDF_17:
+			Version = 17;
+			break;
+		default:
+			Version = 17;
+			break;
+	}
+
+	FPDF_BOOL RetVal = FPDF_SaveWithVersion(this->Document, &Writer, Flags, Version);
+
+	if (ThreadLocalPDFBytes.IsEmpty() || RetVal != 1)
+	{
+		return false;
+	}
+
+	Out_Bytes = ThreadLocalPDFBytes;
+	return RetVal;
+}
 
 void UPDFiumDoc::BeginDestroy()
 {
@@ -1220,24 +1267,15 @@ bool UPDFiumDoc::PDFium_Save_File(FString Export_Path, EPDFiumSaveTypes In_SaveT
 		return false;
 	}
 
-	UPDFiumSave* SaveFactory = NewObject<UPDFiumSave>();
-	TArray64<uint8> Buffer = SaveFactory->Callback_Save(this->Document, In_SaveType, In_Version);
+	TArray64<uint8> PDF_Bytes;
+	FPDF_BOOL RetVal = this->SaveBytes64(PDF_Bytes, In_SaveType, In_Version);
 
-	if (Buffer.IsEmpty())
+	if (!RetVal || PDF_Bytes.IsEmpty())
 	{
 		return false;
 	}
 
-	bool RetVal = false; 
-	RetVal = FFileHelper::SaveArrayToFile(Buffer, *Export_Path);
-
-	if (!RetVal)
-	{
-		return false;
-	}
-
-	RetVal = SaveFactory->ConditionalBeginDestroy();
-	return RetVal;
+	return FFileHelper::SaveArrayToFile(PDF_Bytes, *Export_Path);
 }
 
 bool UPDFiumDoc::PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
@@ -1257,20 +1295,19 @@ bool UPDFiumDoc::PDFium_Save_Bytes_x64(UBytesObject_64*& Out_Bytes, EPDFiumSaveT
 		return false;
 	}
 
-	UPDFiumSave* SaveFactory = NewObject<UPDFiumSave>();
-	TArray64<uint8> Buffer = SaveFactory->Callback_Save(this->Document, In_SaveType, In_Version);
-	
-	if (Buffer.IsEmpty())
+	TArray64<uint8> PDF_Bytes;
+	FPDF_BOOL RetVal = this->SaveBytes64(PDF_Bytes, In_SaveType, In_Version);
+
+	if (!RetVal || PDF_Bytes.IsEmpty())
 	{
 		return false;
 	}
 
-	UBytesObject_64* Temp_PDF = NewObject<UBytesObject_64>();
-	FMemory::Memcpy(Temp_PDF->ByteArray.GetData(), Buffer.GetData(), Buffer.Num());
-	Out_Bytes = Temp_PDF;
+	Out_Bytes = NewObject<UBytesObject_64>();
+	Out_Bytes->ByteArray.SetNum(PDF_Bytes.Num());
+	FMemory::Memcpy(Out_Bytes->ByteArray.GetData(), PDF_Bytes.GetData(), PDF_Bytes.Num());
 
-	bool RetVal = SaveFactory->ConditionalBeginDestroy();
-	return RetVal;
+	return true;
 }
 
 bool UPDFiumDoc::PDFium_Save_Bytes_x86(TArray<uint8>& Out_Bytes, EPDFiumSaveTypes In_SaveType, EPDFiumSaveVersion In_Version)
@@ -1290,25 +1327,17 @@ bool UPDFiumDoc::PDFium_Save_Bytes_x86(TArray<uint8>& Out_Bytes, EPDFiumSaveType
 		return false;
 	}
 
-	UPDFiumSave* SaveFactory = NewObject<UPDFiumSave>();
-	TArray64<uint8> Buffer = SaveFactory->Callback_Save(this->Document, In_SaveType, In_Version);
-	const size_t BufferSize = Buffer.Num();
+	TArray<uint8> PDF_Bytes;
+	FPDF_BOOL RetVal = this->SaveBytes(PDF_Bytes, In_SaveType, In_Version);
 
-	if (Buffer.IsEmpty())
+	if (!RetVal || PDF_Bytes.IsEmpty())
 	{
 		return false;
 	}
 
-	if (BufferSize > INT32_MAX)
-	{
-		return false;
-	}
-
-	TArray<uint8> Temp_Output;
-	Temp_Output.SetNum(BufferSize);
-	FMemory::Memcpy(Temp_Output.GetData(), Buffer.GetData(), BufferSize);
-	Out_Bytes = Temp_Output;
-
-	bool RetVal = SaveFactory->ConditionalBeginDestroy();
-	return RetVal;
+	Out_Bytes.Empty();
+	Out_Bytes.SetNum(PDF_Bytes.Num());
+	FMemory::Memcpy(Out_Bytes.GetData(), PDF_Bytes.GetData(), PDF_Bytes.Num());
+	
+	return true;
 }
