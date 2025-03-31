@@ -5,14 +5,15 @@ https://github.com/bblanchon/pdfium-binaries
 2. In order to view online PDF files, you have to use a HTTP Client plugin. You can use ours or get one from Github/Unreal Marketplace or write your own.<br />
 https://github.com/FF-Projects-UE/HTTP_Client
 
-3. <b>Extended Variables</b> for x64 bytes and external fonts<br />
+3. <b>Extended Variables</b> for x64 bytes, external fonts and image adding<br />
 https://github.com/FF-Projects-UE/ExtendedVars
 
 # TARGET PLATFORM
 This is a "runtime" plugin. It won't work on editor. It supports Windows and Android platforms as target.
 
 # HELPER FUNCTIONS
-Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in order to support this kind of large PDFs, we use ByteObject64 from our Extended Variables plugin..
+Unreal blueprints doesn't support ``TArray64<uint8>`` and ``TArray<uint8>`` doesn't support more than 2 GB file size. So, if you want to bigger PDF files than 2 GB, you have to use ``BytesObject_x64`` from our ``Extended Variables`` plugin.< /br>
+Add image function expects images as bytes array. You can use our ``Extended Variables`` plugin to get texture buffers, you can use another plugins from marketplace or you can write your own logic. Target texture shouldn't be ``DXT``variations. For detailed information, you can look at ``Extended Variables``'s ``README`` file.
 
 # PDFIUM SYSTEM FUNCTIONS
 * IsPDFiumIntialized
@@ -53,10 +54,10 @@ Unreal blueprints doesn't support TArray64<uint8> (more than 2GB size). So, in o
 	* Border X and Y = It defines vertical and horizontal borders.
 	* Use Charcodes: Frontend usage from blueprints are same but at backend it switches between ASCII Decimal based "FPDFText_SetCharcodes()" and "FPDFText_SetText()". Charcodes has better character support.
 
-* <b>PDFium - Add Image</b>: It can add BGRA8 UTexture2D and UTextureRenderTarget2D to PDF file. Textures shouldn't be DXT variations.
+* <b>PDFium - Add Image</b>: It expects byte array.
 * <b>PDFium - Draw Rectangle</b>: It will draw a rectangle on PDF file with given location, size and color.
-* <b>PDFium - Save File</b>: You need to spawn PDFium_Save actor class to save your PDF files. If you need to save multiple PDF files at the same time, you need to spawn that actor for each of them.
-* <b>PDFium - Save Bytes</b>: You need to spawn PDFium_Save actor class to save your PDF as bytes. If you need to save multiple PDF at the same time, you need to spawn that actor for each of them.
+* <b>PDFium - Save File</b>
+* <b>PDFium - Save Bytes</b>
 
 # INSTRUCTIONS
 * Look at plugin's content folder. There are example blueprints to show you how can you use this plugin.
