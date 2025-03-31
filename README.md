@@ -24,20 +24,20 @@ Open PDF from Memory
 
 # PDFIUM READ FUNCTIONS
 * <b>PDFium - PDFium Get Pages</b>: It will give a Map of (Key: Texture2D, Value: Width and Height) pages as textures.
-* PDFium - PDFium Get All Texts: It will get all texts of all pages.
-* PDFium - PDFium Get Texts: It will get all texts of target page with their styles.
+* <b>PDFium - PDFium Get All Texts<b>: It will get all texts of all pages.
+* <b>PDFium - PDFium Get Texts<b>: It will get all texts of target page with their styles.
 	* Transform (Location, size): Some editors use "1" point for font size and change text object's size with transform matrixes. So, if you want to re-create that PDF file with only font size, you will get very small textures.
 	* Font Size
 	* Font Name
 	* Font Color
 	* Runtime Font Object : It is a container of UFont pointer. Because we have to release it and UFontFace when we want to close game.
 
-* PDFium - Select Text: You can think this as a somekind of text selection. It will get text/strings in a rectangle area.
+* <b>PDFium - Select Text<b>: You can think this as a somekind of text selection. It will get text/strings in a rectangle area.
 	* You have to define that rectangle's size and location according with PDF's size and location.
 	* Don't use your cursor location directly.
 	* Sample math: (Cursor Location - PDF Location at screen) * Sampling (value which you used on Get Pages)
 
-* PDFium Get Links: It will give all "weblinks" in specified page. It won't give internal bridges. It will give weblinks. This is limitation of PDFium.
+* <b>PDFium Get Links<b>: It will give all "weblinks" in specified page. It won't give internal bridges. It will give weblinks. This is limitation of PDFium.
 * PDFium Get Images: It will extract all images as a TMap<UTexture2D, FVector2D (locations>. But images have to be FPDF_PAGEOBJ_IMAGE
 * PDFium - Get Page Count and Sizes : It will give an array of FVector2D. Lenght of array will be equal to page size, each elements contains size of documentation.
 * PDFium- File Close: It will close opened document.
