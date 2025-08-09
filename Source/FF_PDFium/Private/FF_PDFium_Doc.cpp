@@ -217,6 +217,8 @@ size_t UPDFiumDoc::GetSize()
 bool UPDFiumDoc::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*, FVector2D>& Out_Pages, int32 In_Sampling, FColor BG_Color, bool bUseSrgb, bool bUseMatrix, bool bUseAlpha, bool bRenderAnnots)
 {
 	FJsonObjectWrapper TempCode;
+	Out_Code = TempCode;
+
 	TempCode.JsonObject->SetStringField("PluginName", "FF_PDFium");
 	TempCode.JsonObject->SetStringField("ClassName", "UFF_PDFiumBPLibrary");
 	TempCode.JsonObject->SetStringField("FunctionName", "PDFium_Get_Pages");
