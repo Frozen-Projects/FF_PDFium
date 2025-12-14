@@ -9,7 +9,7 @@ void FFF_PDFiumModule::StartupModule()
 {
 #ifdef _WIN64
 	const FString BasePluginDir = IPluginManager::Get().FindPlugin("FF_PDFium")->GetBaseDir();
-	const FString DLL_Path = FPaths::Combine(*BasePluginDir, TEXT("Source/FF_PDFium/ThirdParty/pdfium/Windows/lib/pdfium.dll"));
+	const FString DLL_Path = FPaths::Combine(*BasePluginDir, TEXT("Source/FF_PDFium/ThirdParty/pdfium/Win64/bin/pdfium.dll"));
 	PDFium_Handle = FPlatformProcess::GetDllHandle(*DLL_Path);
 
 	if (PDFium_Handle != nullptr)

@@ -16,9 +16,9 @@ public class FF_PDFium : ModuleRules
         {
             bUseRTTI = true;
 
-            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Windows", "include"));
-			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Windows", "lib", "pdfium.dll.lib"));
-            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Windows", "lib", "pdfium.dll"));
+            PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Win64", "include"));
+			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Win64", "lib", "pdfium.dll.lib"));
+            RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Win64", "bin", "pdfium.dll"));
             PublicDelayLoadDLLs.Add("pdfium.dll");
         }
 
@@ -54,16 +54,7 @@ public class FF_PDFium : ModuleRules
 				"Json",
                 "JsonUtilities",
                 "JsonBlueprintUtilities",
-
-				// ... add private dependencies that you statically link with here ...	
 			}
             );
-		
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
 	}
 }
