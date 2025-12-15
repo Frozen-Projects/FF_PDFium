@@ -59,9 +59,11 @@ Add image function expects images as bytes array. You can use our ``Extended Var
 
 # INSTRUCTIONS
 * Look at plugin's content folder. There are example blueprints to show you how can you use this plugin.
-* You have to PDFium Subsystem to Create and Open PDF files.
-* Do NOT manually invalidate or set empty document objects !
-* If you want to "view" changes which you did on your newly created PDF file in UE5, you need to render it "again" and assign it to your widget or material.
+* Spawn ``PDF_Manager`` actor class. All PDF related functions are its blueprint exposed member functions.
+* Create or open a PDF file from actor class.
+	* If you want to create one, you have to add a page to it.
+* Do all your things.
+* If you want to "view" changes on PDF file in UE5, you need to render it "again" and assign it to your widget or material.
 
 # ROADMAP
 * <b>Rotation inputs</b>: Inputs are connected to internal functions but PDFium use a somekind of rotation matrix. So, use it if you know what you are doing. We will create a helper function about this.
