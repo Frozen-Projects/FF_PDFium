@@ -12,11 +12,10 @@ https://github.com/FF-Projects-UE/ExtendedVars
 This is a <b>runtime</b> plugin. It won't work on editor. It supports Windows and Android platforms as target.
 
 # HELPER FUNCTIONS
-Unreal blueprints doesn't support ``TArray64<uint8>`` and ``TArray<uint8>`` doesn't support more than 2 GB file size. So, if you want to bigger PDF files than 2 GB, you have to use ``BytesObject_x64`` from our ``Extended Variables`` plugin.< /br>
+Unreal blueprints doesn't support ``TArray64<uint8>`` and ``TArray<uint8>`` doesn't support more than 2 GB file size. So, if you want to bigger PDF files than 2 GB, you have to use ``BytesObject_x64`` from our ``Extended Variables`` plugin.</br>
 Add image function expects images as bytes array. You can use our ``Extended Variables`` plugin to get texture buffers, you can use another plugins from marketplace or you can write your own logic. Target texture shouldn't be ``DXT``variations. For detailed information, you can look at ``Extended Variables``'s ``README`` file.
 
 # PDFIUM SYSTEM FUNCTIONS
-* IsPDFiumIntialized
 * Create Document
 * Open PDF from file
 * Open PDF from Memory
