@@ -4,6 +4,8 @@
 
 #include "Modules/ModuleManager.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(Log_Delay_Load, Log, All);
+
 class FFF_PDFiumModule : public IModuleInterface
 {
 public:

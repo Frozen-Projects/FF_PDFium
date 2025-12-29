@@ -15,7 +15,7 @@
 #include "ImageUtils.h"  
 #include "Engine/TextureRenderTarget2D.h"
 
-#include "Subsystems/GameInstanceSubsystem.h"
+#include "Subsystems/EngineSubsystem.h"
 
 THIRD_PARTY_INCLUDES_START
 // https://github.com/bblanchon/pdfium-binaries/releases
