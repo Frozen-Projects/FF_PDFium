@@ -26,6 +26,7 @@ public class FF_PDFium : ModuleRules
         {
             // We need it for #include "AndroidPlatform.h" in fpdview.h. Because default #define DLLEXPORT makes clash with Unreal's defination. We comment it out and include AndroidPlatform.h
             PublicIncludePaths.Add(Path.Combine(EngineDirectory, "Source", "Runtime", "Core", "Public", "Android"));
+            
             PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Android", "include"));
             PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "pdfium", "Android", "lib", "arm64-v8a", "libpdfium.so"));
             AdditionalPropertiesForReceipt.Add("AndroidPlugin", Path.Combine(ModuleDirectory, "FF_PDFium_UPL_Android.xml"));
@@ -35,9 +36,7 @@ public class FF_PDFium : ModuleRules
 			new string[]
 			{
 				"Core",
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
+			});
 			
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
@@ -54,7 +53,6 @@ public class FF_PDFium : ModuleRules
 				"Json",
                 "JsonUtilities",
                 "JsonBlueprintUtilities",
-			}
-            );
+			});
 	}
 }
