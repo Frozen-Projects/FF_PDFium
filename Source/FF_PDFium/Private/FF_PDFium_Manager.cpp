@@ -358,23 +358,21 @@ bool APDF_Manager::PDFium_Clear_Doc()
 
 bool APDF_Manager::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2D*, FVector2D>& Out_Pages, int32 In_Sampling, FColor BG_Color, bool bUseSrgb, bool bUseMatrix, bool bUseAlpha, bool bRenderAnnots)
 {
-	FJsonObjectWrapper TempCode;
-	Out_Code = TempCode;
-
-	TempCode.JsonObject->SetStringField("PluginName", "FF_PDFium");
-	TempCode.JsonObject->SetStringField("ClassName", "UFF_PDFiumBPLibrary");
-	TempCode.JsonObject->SetStringField("FunctionName", "PDFium_Get_Pages");
-	TempCode.JsonObject->SetStringField("AdditionalInfo", "");
+	Out_Code.JsonObject->SetStringField(TEXT("PluginName"), TEXT("Extended Variables"));
+	Out_Code.JsonObject->SetStringField(TEXT("FunctionName"), TEXT(__FUNCTION__));
+	TArray<TSharedPtr<FJsonValue>> Details;
 
 	if (!APDF_Manager::bIsLibInitialized)
 	{
-		TempCode.JsonObject->SetStringField("Description", "PDFium has not been initialized.");
+		Details.Add(MakeShareable(new FJsonValueString(TEXT("PDFium has not been initialized."))));
+		Out_Code.JsonObject->SetArrayField(TEXT("Details"), Details);
 		return false;
 	}
 
 	if (!this->Document)
 	{
-		TempCode.JsonObject->SetStringField("Description", "PDFium \"file\" is not valid.");
+		Details.Add(MakeShareable(new FJsonValueString(TEXT("PDFium \"file\" is not valid."))));
+		Out_Code.JsonObject->SetArrayField(TEXT("Details"), Details);
 		return false;
 	}
 
@@ -461,7 +459,7 @@ bool APDF_Manager::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2
 	}
 
 	const bool IsSuccessfull = Out_Pages.Num() > 0 ? true : false;
-	TempCode.JsonObject->SetStringField("Description", IsSuccessfull ? "PDF rendered successfully." : "There was a problem while rendering PDF file.");
+	Out_Code.JsonObject->SetStringField(TEXT("Description"), IsSuccessfull ? TEXT("PDF rendered successfully.") : TEXT("There was a problem while rendering PDF file."));
 
 	auto GetSkippedPages = [](TArray<int32> In_Skipped)->FString
 		{
@@ -486,8 +484,7 @@ bool APDF_Manager::PDFium_Get_Pages(FJsonObjectWrapper& Out_Code, TMap<UTexture2
 			return Temp_String;
 		};
 
-	TempCode.JsonObject->SetStringField("AdditionalInfo", SkippedPages.IsEmpty() ? "" : "SkippedPages : " + GetSkippedPages(SkippedPages));
-
+	Out_Code.JsonObject->SetStringField(TEXT("AdditionalInfo"), SkippedPages.IsEmpty() ? TEXT("") : TEXT("SkippedPages : ") + GetSkippedPages(SkippedPages));
 	return IsSuccessfull;
 }
 
