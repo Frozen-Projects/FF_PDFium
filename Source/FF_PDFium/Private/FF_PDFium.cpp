@@ -5,7 +5,7 @@
 
 #define LOCTEXT_NAMESPACE "FFF_PDFiumModule"
 
-DEFINE_LOG_CATEGORY(Log_Delay_Load);
+DEFINE_LOG_CATEGORY(Log_PDFium);
 
 void FFF_PDFiumModule::StartupModule()
 {
@@ -16,12 +16,12 @@ void FFF_PDFiumModule::StartupModule()
 
 	if (PDFium_Handle != nullptr)
 	{
-		UE_LOG(Log_Delay_Load, Log, TEXT("pdfium.dll loaded successfully!"));
+		UE_LOG(Log_PDFium, Log, TEXT("pdfium.dll loaded successfully!"));
 	}
 
 	else
 	{
-		UE_LOG(Log_Delay_Load, Fatal, TEXT("pdfium.dll failed to load!"));
+		UE_LOG(Log_PDFium, Fatal, TEXT("pdfium.dll failed to load!"));
 	}
 #endif
 }
